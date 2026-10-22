@@ -96,8 +96,8 @@ test("a BYOK model is listed with the price AnyRouter advertises", () => {
 	const models = toModelConfigs(CATALOG.data ?? []);
 	const byok = models.find((m) => m.id === "z-ai/glm-4.5-flash");
 	assert.ok(byok, "a BYOK model stays in the catalog");
-	assert.equal(byok.cost.input, 0);
-	assert.equal(byok.cost.output, 0);
+	assert.equal(byok?.cost.input, 0);
+	assert.equal(byok?.cost.output, 0);
 });
 
 test("a model with vision offers image input", () => {

@@ -32,7 +32,9 @@
   },
   "scripts": {
     "test": "node --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsdown",
+    "prepack": "npm run build"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
@@ -61,11 +63,7 @@
     "typescript": "^6.0.3"
   },
   "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
-    },
+    ".": "./dist/index.mjs",
     "./package.json": "./package.json"
-  },
-  "main": "./dist/index.mjs"
+  }
 }

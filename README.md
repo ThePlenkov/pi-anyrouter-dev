@@ -81,8 +81,11 @@ and price per million tokens, as AnyRouter advertises them.
 The catalog endpoint answers without a key, but the request is authenticated
 when a key is configured. The authenticated catalog is the caller's own
 catalog: it reflects the entitlements of the key in use, and it is not the
-public list. A model the key cannot reach is absent from it, and a model
-only the key can reach is absent from the public list.
+public list. With `all=1` the extension asks for the full catalog, so the
+authenticated list can include models the key cannot reach - a BYOK model
+whose upstream key is not configured, for example. Inclusion in the list
+is not permission to call: such a model answers `404 model_unavailable`,
+which is AnyRouter's billing rule, not a catalog defect.
 
 A model that AnyRouter serves only through a caller-supplied upstream key
 (BYOK) is listed but answers `404 model_unavailable` until that upstream
@@ -90,10 +93,10 @@ key is configured. Those are upstream billing rules, not catalog errors.
 
 The catalog is fetched with `all=1`, so every model AnyRouter advertises
 appears - including BYOK-only models that the default endpoint omits
-until the caller can reach them. A model the key cannot reach is absent
-from the authenticated list, and a model only the key can reach is
-absent from the public one. Either way, a BYOK model stays listed until
-the caller configures its upstream key, at which point it answers.
+until the caller can reach them. The authenticated list can therefore
+include models the key cannot reach, and a model only the key can reach
+is absent from the public list. Either way, a BYOK model stays listed
+until the caller configures its upstream key, at which point it answers.
 
 The catalog is persisted through pi's own model store, so a start without a
 network still has a model list. In offline mode (`PI_OFFLINE`) the extension
@@ -130,7 +133,27 @@ advertises the `reasoning` parameter gets the full ladder.
 ```bash
 npm test        # unit tests over the catalog mapping
 npm run typecheck
+npm run build   # tsdown ESM bundle with .d.mts (for releases)
 ```
+
+### Nx build & release
+
+`npm run build` compiles through `tsdown` (`tsdown.config.ts`) and writes
+to `dist/`. The `@nx-devkit/typescript` and `@nx-devkit/prepare-for-release`
+plugins in `nx.json` infer `typecheck`, `test`, `build` and `prepare-for-release`
+targets, so the same work runs under Nx:
+
+```bash
+npx nx build          # build dist/
+npx nx typecheck      # type-check
+npx nx test           # run the test suite
+npx nx run-many -t build --if-present   # build all projects
+```
+
+`nx.json` sets `release.version.preVersionCommand` to build `dist/` before
+versioning, and `package.json` has a `prepack` script (`npm run build`) so a
+`npm pack` / `npm publish` from a clean checkout always ships the bundle.
+`npm pack --dry-run` must list `dist/index.mjs` and `dist/index.d.mts`.
 
 ### Local development
 
@@ -139,7 +162,7 @@ Test the extension against the working tree without publishing it. Create
 
 ```json
 {
-  "extensions": ["../src/index.ts"],
+  "extensions": ["./src/index.ts"],
   "defaultProvider": "anyrouter-dev",
   "defaultModel": "anyrouter/auto"
 }
