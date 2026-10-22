@@ -1,7 +1,7 @@
 {
-  "name": "@theplenkov/pi-anyrouter",
+  "name": "pi-anyrouter-dev",
   "version": "0.1.0",
-  "description": "AnyRouter provider for the pi coding agent - a thin layer over pi's built-in OpenAI-compatible client with a dynamically fetched model catalog",
+  "description": "AnyRouter (anyrouter.dev) provider for the pi coding agent - a thin layer over pi's built-in OpenAI-compatible client with a dynamically fetched model catalog",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
@@ -20,12 +20,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ThePlenkov/pi-anyrouter.git"
+    "url": "git+https://github.com/ThePlenkov/pi-anyrouter-dev.git"
   },
   "bugs": {
-    "url": "https://github.com/ThePlenkov/pi-anyrouter/issues"
+    "url": "https://github.com/ThePlenkov/pi-anyrouter-dev/issues"
   },
-  "homepage": "https://github.com/ThePlenkov/pi-anyrouter#readme",
+  "homepage": "https://github.com/ThePlenkov/pi-anyrouter-dev#readme",
   "pi": {
     "extensions": [
       "./src/index.ts"
