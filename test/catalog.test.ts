@@ -123,3 +123,10 @@ test("compat uses max_tokens and the nested reasoning object", () => {
 	assert.equal(config.compat.supportsDeveloperRole, false);
 	assert.equal(config.compat.supportsStore, false);
 });
+
+test("compat uses flat reasoning for models that route to nvidia", () => {
+	const config = toModelConfig(
+		model({ per_upstream: [{ backend: "nvidia", context: { max_length: 100000 } }] }),
+	);
+	assert.equal(config.compat.thinkingFormat, "openai");
+});

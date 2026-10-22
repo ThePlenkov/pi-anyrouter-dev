@@ -123,18 +123,30 @@ function inputModalities(model: AnyRouterModel): ("text" | "image")[] {
  *
  * Every chat model in the catalog advertises the `max_tokens` parameter,
  * and AnyRouter accepts `max_completion_tokens` on the same routes, so
- * `max_tokens` is the field pi sends. Reasoning travels in the nested
- * `reasoning: { effort }` object: the flat `reasoning_effort` field is
- * accepted but the upstream then leaks the reasoning text into the
- * content, which corrupts the conversation.
+ * `max_tokens` is the field pi sends.
+ *
+ * Reasoning format is chosen per-model:
+ * - Models that can route to nvidia upstreams use flat `reasoning_effort`
+ *   (thinkingFormat: "openai") because nvidia rejects the nested
+ *   `reasoning: { effort }` object with HTTP 400.
+ * - All other models use nested `reasoning: { effort }`
+ *   (thinkingFormat: "openrouter") to avoid the leak that occurs on some
+ *   upstreams (notably kilo) when using the flat format.
  *
  * The `developer` role is not used: AnyRouter routes to upstreams with
  * differing role support, and `system` is understood everywhere.
  */
-function compat(): Record<string, unknown> {
+function compat(model: AnyRouterModel): Record<string, unknown> {
+	// nvidia upstreams reject the nested `reasoning: { effort }` field.
+	// AnyRouter passes it through and nvidia returns 400.
+	// Use flat `reasoning_effort` for models that have an nvidia route.
+	const hasNvidiaRoute = (model.per_upstream ?? []).some(
+		(u) => u.backend === "nvidia" || u.backend?.startsWith("nvidia-"),
+	);
+
 	return {
 		maxTokensField: "max_tokens",
-		thinkingFormat: "openrouter",
+		thinkingFormat: hasNvidiaRoute ? "openai" : "openrouter",
 		supportsDeveloperRole: false,
 		supportsStore: false,
 	};
@@ -156,7 +168,7 @@ export function toModelConfig(model: AnyRouterModel): AnyRouterModelConfig {
 		cost: cost(model),
 		contextWindow: contextWindow(model),
 		maxTokens: maxTokens(model),
-		compat: compat(),
+		compat: compat(model),
 	};
 }
 

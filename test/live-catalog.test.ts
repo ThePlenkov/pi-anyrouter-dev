@@ -62,12 +62,42 @@ const CATALOG: AnyRouterCatalog = {
 			architecture: { input_modalities: ["text"], output_modalities: ["text"] },
 			top_provider: { context_length: 8192, max_completion_tokens: 1024 },
 		},
+		{
+			// A model AnyRouter serves only through a caller-supplied upstream
+			// key. It is listed in the catalog and stays listed - the upstream
+			// answers `404 model_unavailable` until that key is configured,
+			// which is AnyRouter's billing rule, not a catalog defect.
+			id: "z-ai/glm-4.5-flash",
+			name: "glm-4.5-flash",
+			capabilities: ["chat", "streaming", "function-calling", "reasoning"],
+			context_length: 128000,
+			architecture: { input_modalities: ["text"], output_modalities: ["text"] },
+			pricing: { input_per_1m: 0, output_per_1m: 0, billing: "byok" },
+			top_provider: { context_length: 128000, max_completion_tokens: null },
+			supported_parameters: ["max_tokens", "temperature"],
+		},
 	],
 };
 
 test("maps the live catalog to chat models only", () => {
 	const models = toModelConfigs(CATALOG.data ?? []);
-	assert.deepEqual(models.map((m) => m.id), ["moonshotai/kimi-k3", "anyrouter/auto", "reflection/beam-1.0"]);
+	assert.deepEqual(models.map((m) => m.id), [
+		"moonshotai/kimi-k3",
+		"anyrouter/auto",
+		"reflection/beam-1.0",
+		"z-ai/glm-4.5-flash",
+	]);
+});
+
+test("a BYOK model is listed with the price AnyRouter advertises", () => {
+	// The upstream key is the caller's own, so the pooled price is zero.
+	// Dropping the model instead would hide a model the caller can use
+	// once their upstream key is configured.
+	const models = toModelConfigs(CATALOG.data ?? []);
+	const byok = models.find((m) => m.id === "z-ai/glm-4.5-flash");
+	assert.ok(byok, "a BYOK model stays in the catalog");
+	assert.equal(byok.cost.input, 0);
+	assert.equal(byok.cost.output, 0);
 });
 
 test("a model with vision offers image input", () => {
