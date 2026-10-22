@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AnyModel, ModelsStoreEntry } from "@earendil-works/pi-ai";
 import { apiKeyTemplate, resolveApiKey, credentialApiKey, API_KEY_ENV_VARS, PRIMARY_API_KEY_ENV } from "./api-key.ts";
-import { toModelConfigs, type AnyRouterModelConfig } from "./catalog.ts";
+import { toModelConfigs, recomputeCompat, type AnyRouterModelConfig } from "./catalog.ts";
 import { fetchCatalog, type CatalogFetchOptions } from "./fetch-catalog.ts";
 import { BASE_URL, PROVIDER_ID, PROVIDER_NAME, isOffline } from "./provider-info.ts";
 
@@ -118,6 +118,7 @@ function toStoredModels(models: AnyRouterModelConfig[]): AnyModel[] {
 		contextWindow: model.contextWindow,
 		maxTokens: model.maxTokens,
 		compat: model.compat,
+		...(model.perUpstream ? { perUpstream: model.perUpstream } : {}),
 	}));
 }
 
@@ -135,6 +136,10 @@ function fromStoredModels(stored: Readonly<ModelsStoreEntry> | undefined): AnyRo
 		if (model.type !== undefined && model.type !== "chat") continue;
 		if (typeof model.id !== "string" || typeof model.name !== "string") continue;
 		if (typeof model.contextWindow !== "number" || typeof model.maxTokens !== "number") continue;
+		// `perUpstream` is this extension's own field, carried through pi's
+		// persisted model so a restored catalog can recompute `compat`. pi
+		// does not declare it, so it is read through a narrow cast.
+		const perUpstream = (model as { perUpstream?: AnyRouterModelConfig["perUpstream"] }).perUpstream;
 		restored.push({
 			id: model.id,
 			name: model.name,
@@ -146,9 +151,16 @@ function fromStoredModels(stored: Readonly<ModelsStoreEntry> | undefined): AnyRo
 			contextWindow: model.contextWindow,
 			maxTokens: model.maxTokens,
 			compat: model.compat ?? {},
+			...(perUpstream ? { perUpstream } : {}),
 		});
 	}
-	return restored;
+	// The persisted snapshot can carry a `compat` that was correct when it
+	// was saved, but the reasoning format depends on the upstreams the
+	// model routes to, and that can change between refreshes. Recompute it
+	// from the routes the snapshot also carries, so a restored NVIDIA-only
+	// model does not keep sending the nested reasoning object and getting
+	// HTTP 400.
+	return restored.map(recomputeCompat);
 }
 
 export { toModelConfig, toModelConfigs } from "./catalog.ts";

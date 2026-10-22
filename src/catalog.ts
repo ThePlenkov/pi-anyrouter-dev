@@ -1,4 +1,4 @@
-import type { AnyRouterModel } from "./catalog-types.ts";
+import type { AnyRouterModel, AnyRouterUpstream } from "./catalog-types.ts";
 
 /**
  * Reasoning effort values AnyRouter accepts. A request carrying any other
@@ -21,6 +21,14 @@ export interface AnyRouterModelConfig {
 	contextWindow: number;
 	maxTokens: number;
 	compat: Record<string, unknown>;
+	/**
+	 * The upstreams the model can route to, as the catalog reported them.
+	 *
+	 * Carried alongside the model so a restored snapshot can recompute
+	 * `compat` from the current routes instead of trusting a format choice
+	 * that may have been made for a different catalog state.
+	 */
+	perUpstream?: AnyRouterUpstream[];
 }
 
 /**
@@ -119,34 +127,55 @@ function inputModalities(model: AnyRouterModel): ("text" | "image")[] {
 }
 
 /**
+ * Whether an upstream rejects the nested `reasoning: { effort }` object.
+ *
+ * NVIDIA returns HTTP 400 when it receives the nested reasoning field, so
+ * models routed there must use the flat `reasoning_effort` instead. Other
+ * upstreams leak reasoning into message content when given the flat field,
+ * so they need the nested form.
+ */
+function upstreamRejectsNestedReasoning(backend: string | undefined): boolean {
+	return backend === "nvidia" || backend?.startsWith("nvidia-") === true;
+}
+
+/**
  * Per-model compatibility flags.
  *
  * Every chat model in the catalog advertises the `max_tokens` parameter,
  * and AnyRouter accepts `max_completion_tokens` on the same routes, so
  * `max_tokens` is the field pi sends.
  *
- * Reasoning format is chosen per-model:
- * - Models that can route to nvidia upstreams use flat `reasoning_effort`
- *   (thinkingFormat: "openai") because nvidia rejects the nested
- *   `reasoning: { effort }` object with HTTP 400.
- * - All other models use nested `reasoning: { effort }`
- *   (thinkingFormat: "openrouter") to avoid the leak that occurs on some
- *   upstreams (notably kilo) when using the flat format.
+ * Reasoning format is chosen per-upstream rather than per-model, because
+ * a model can route to upstreams that disagree about the format: NVIDIA
+ * rejects the nested `reasoning: { effort }` object with HTTP 400, while
+ * other upstreams leak reasoning into message content when given the flat
+ * `reasoning_effort` field. One format for the whole model would corrupt
+ * the conversation on one branch or 400 on the other.
+ *
+ * When the catalog declares no upstreams for a model, the nested form is
+ * the safe default: it is what non-NVIDIA routes expect, and a model with
+ * no declared routes is not an NVIDIA model by any evidence the catalog
+ * provides.
  *
  * The `developer` role is not used: AnyRouter routes to upstreams with
  * differing role support, and `system` is understood everywhere.
  */
 function compat(model: AnyRouterModel): Record<string, unknown> {
-	// nvidia upstreams reject the nested `reasoning: { effort }` field.
-	// AnyRouter passes it through and nvidia returns 400.
-	// Use flat `reasoning_effort` for models that have an nvidia route.
-	const hasNvidiaRoute = (model.per_upstream ?? []).some(
-		(u) => u.backend === "nvidia" || u.backend?.startsWith("nvidia-"),
-	);
+	const upstreams = model.per_upstream ?? [];
+	// Flat `reasoning_effort` is the only form nvidia accepts; it leaks
+	// reasoning into message content on kilo and other upstreams. Nested
+	// `reasoning: { effort }` is the opposite: clean on every non-nvidia
+	// route, rejected by nvidia with HTTP 400. AnyRouter picks the
+	// upstream per request, and pi resolves the format once per model, so
+	// no single value fits a model with both kinds of route. The safe
+	// default is the nested form - it is correct on the routes most
+	// models use - and flat is used only when every declared route is
+	// nvidia, where the nested form would 400 and the flat form works.
+	const allNvidia = upstreams.length > 0 && upstreams.every((u) => upstreamRejectsNestedReasoning(u.backend));
 
 	return {
 		maxTokensField: "max_tokens",
-		thinkingFormat: hasNvidiaRoute ? "openai" : "openrouter",
+		thinkingFormat: allNvidia ? "openai" : "openrouter",
 		supportsDeveloperRole: false,
 		supportsStore: false,
 	};
@@ -156,6 +185,7 @@ function compat(model: AnyRouterModel): Record<string, unknown> {
 export function toModelConfig(model: AnyRouterModel): AnyRouterModelConfig {
 	const name = model.display_name ?? model.name ?? model.id;
 	const levelMap = thinkingLevelMap(model);
+	const upstreams = model.per_upstream ?? [];
 	return {
 		id: model.id,
 		name,
@@ -169,6 +199,30 @@ export function toModelConfig(model: AnyRouterModel): AnyRouterModelConfig {
 		contextWindow: contextWindow(model),
 		maxTokens: maxTokens(model),
 		compat: compat(model),
+		...(upstreams.length > 0 ? { perUpstream: upstreams } : {}),
+	};
+}
+
+/**
+ * Recompute the compatibility flags for a restored model.
+ *
+ * A persisted snapshot carries the `compat` that was correct when it was
+ * saved, but the reasoning format depends on which upstreams the model
+ * routes to, and that can change between catalog refreshes. Restoring a
+ * stale format makes NVIDIA-routed models send the nested reasoning object
+ * and get HTTP 400. The snapshot also carries the upstreams, so the format
+ * is recomputed from the current routes instead of trusted blindly.
+ */
+export function recomputeCompat(config: AnyRouterModelConfig): AnyRouterModelConfig {
+	const upstreams = config.perUpstream ?? [];
+	if (upstreams.length === 0) return config;
+	const allNvidia = upstreams.every((u) => upstreamRejectsNestedReasoning(u.backend));
+	return {
+		...config,
+		compat: {
+			...config.compat,
+			thinkingFormat: allNvidia ? "openai" : "openrouter",
+		},
 	};
 }
 

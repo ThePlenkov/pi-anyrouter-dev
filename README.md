@@ -88,6 +88,13 @@ A model that AnyRouter serves only through a caller-supplied upstream key
 (BYOK) is listed but answers `404 model_unavailable` until that upstream
 key is configured. Those are upstream billing rules, not catalog errors.
 
+The catalog is fetched with `all=1`, so every model AnyRouter advertises
+appears - including BYOK-only models that the default endpoint omits
+until the caller can reach them. A model the key cannot reach is absent
+from the authenticated list, and a model only the key can reach is
+absent from the public one. Either way, a BYOK model stays listed until
+the caller configures its upstream key, at which point it answers.
+
 The catalog is persisted through pi's own model store, so a start without a
 network still has a model list. In offline mode (`PI_OFFLINE`) the extension
 makes no request at all and serves the persisted snapshot.
