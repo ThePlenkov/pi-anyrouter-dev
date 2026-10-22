@@ -20,13 +20,13 @@ of a request pipeline.
 ## Install
 
 ```bash
-pi install npm:pi-anyrouter
+pi install npm:@theplenkov/pi-anyrouter
 ```
 
 Or try it for one run without installing:
 
 ```bash
-pi -e npm:pi-anyrouter
+pi -e npm:@theplenkov/pi-anyrouter
 ```
 
 From a checkout:

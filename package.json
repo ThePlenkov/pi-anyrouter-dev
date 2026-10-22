@@ -1,5 +1,5 @@
 {
-  "name": "pi-anyrouter",
+  "name": "@theplenkov/pi-anyrouter",
   "version": "0.1.0",
   "description": "AnyRouter provider for the pi coding agent - a thin layer over pi's built-in OpenAI-compatible client with a dynamically fetched model catalog",
   "license": "MIT",
