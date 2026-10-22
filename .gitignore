@@ -1,2 +1,8 @@
 node_modules/
 *.tsbuildinfo
+dist/
+.nx/
+
+# Local pi project config: loads `src/index.ts` from the working tree.
+# See the "Local development" section of the README.
+.pi/

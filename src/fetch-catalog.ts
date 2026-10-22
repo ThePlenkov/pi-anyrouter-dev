@@ -30,7 +30,12 @@ export async function fetchCatalog(options: CatalogFetchOptions): Promise<AnyRou
 		const headers: Record<string, string> = {};
 		if (options.apiKey) headers.Authorization = `Bearer ${options.apiKey}`;
 
-		const response = await fetch(CATALOG_URL, {
+		// `all=1` returns the full catalog, including BYOK-only models that the
+	// default endpoint omits until the caller can reach them. The extension
+	// lists every model AnyRouter advertises, so an unconfigured BYOK model
+	// is listed and answers `404 model_unavailable` - AnyRouter's billing
+	// rule, not a catalog defect.
+	const response = await fetch(`${CATALOG_URL}?all=1`, {
 			headers,
 			signal: controller.signal,
 		});

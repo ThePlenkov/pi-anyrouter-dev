@@ -1,0 +1,28 @@
+{
+  "plugins": [
+    {
+      "options": {},
+      "plugin": "@nx-devkit/typescript"
+    },
+    {
+      "options": {},
+      "plugin": "@nx-devkit/prepare-for-release"
+    }
+  ],
+  "release": {
+    "projects": ["*"],
+    "version": {
+      "conventionalCommits": true,
+      "preVersionCommand": "npx nx run-many -t build --if-present"
+    },
+    "changelog": {
+      "workspaceChangelog": {
+        "createRelease": "github"
+      }
+    },
+    "git": {
+      "commit": true,
+      "tag": true
+    }
+  }
+}

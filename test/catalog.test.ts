@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { toModelConfig, toModelConfigs } from "../src/catalog.ts";
+import { toModelConfig, toModelConfigs, recomputeCompat } from "../src/catalog.ts";
 import type { AnyRouterModel } from "../src/catalog-types.ts";
 
 function model(overrides: Partial<AnyRouterModel> = {}): AnyRouterModel {
@@ -122,4 +122,45 @@ test("compat uses max_tokens and the nested reasoning object", () => {
 	assert.equal(config.compat.thinkingFormat, "openrouter");
 	assert.equal(config.compat.supportsDeveloperRole, false);
 	assert.equal(config.compat.supportsStore, false);
+});
+
+test("compat uses flat reasoning for models that route to nvidia", () => {
+	const config = toModelConfig(
+		model({ per_upstream: [{ backend: "nvidia", context: { max_length: 100000 } }] }),
+	);
+	assert.equal(config.compat.thinkingFormat, "openai");
+});
+
+// A model that routes to both nvidia and a non-nvidia upstream has no
+// single format that works: flat leaks reasoning into message content on
+// kilo, while nested is rejected by nvidia with HTTP 400. pi resolves the
+// format once per model, so the safe default is the nested form - correct
+// on the routes most models use - and flat is used only when every
+// declared route is nvidia.
+test("compat uses nested reasoning when a model also has a non-nvidia route", () => {
+	const config = toModelConfig(
+		model({
+			per_upstream: [
+				{ backend: "nvidia", context: { max_length: 100000 } },
+				{ backend: "kilo", context: { max_length: 4096 } },
+			],
+		}),
+	);
+	assert.equal(config.compat.thinkingFormat, "openrouter");
+});
+
+test("recomputeCompat restores the format from current upstream routes", () => {
+	const restored = recomputeCompat({
+		id: "x",
+		name: "x",
+		api: "openai-completions",
+		reasoning: true,
+		input: ["text"],
+		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+		contextWindow: 1000,
+		maxTokens: 100,
+		compat: { thinkingFormat: "openrouter", maxTokensField: "max_tokens" },
+		perUpstream: [{ backend: "nvidia" }],
+	});
+	assert.equal(restored.compat.thinkingFormat, "openai");
 });

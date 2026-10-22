@@ -4,13 +4,12 @@
   "description": "AnyRouter (anyrouter.dev) provider for the pi coding agent - a thin layer over pi's built-in OpenAI-compatible client with a dynamically fetched model catalog",
   "license": "MIT",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "LICENSE",
     "README.md",
     "src",
-    "index.ts"
+    "dist"
   ],
   "keywords": [
     "pi",
@@ -33,7 +32,9 @@
   },
   "scripts": {
     "test": "node --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsdown",
+    "prepack": "npm run build"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
@@ -50,7 +51,19 @@
   "devDependencies": {
     "@earendil-works/pi-ai": "^1.4.0",
     "@earendil-works/pi-coding-agent": "^1.4.0",
+    "@nx-devkit/prepare-for-release": "^0.1.23",
+    "@nx-devkit/typescript": "^0.2.19",
+    "@nx/devkit": "^24.0.0",
+    "@nx/js": "^24.0.0",
     "@types/node": "^22.20.5",
-    "typescript": "^5.9.2"
+    "@typescript/native-preview": "^7.0.0-dev.20260621.1",
+    "nx": "^24.0.0",
+    "publint": "^0.3.25",
+    "tsdown": "^0.23.1",
+    "typescript": "^6.0.3"
+  },
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
   }
 }

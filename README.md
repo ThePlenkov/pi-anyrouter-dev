@@ -79,9 +79,24 @@ Every model reports its own context window, output cap, input modalities
 and price per million tokens, as AnyRouter advertises them.
 
 The catalog endpoint answers without a key, but the request is authenticated
-when a key is configured - the authenticated catalog lists one model more
-(`minimax/minimax-m3.1-flash`), and it reflects the entitlements of the key
-in use.
+when a key is configured. The authenticated catalog is the caller's own
+catalog: it reflects the entitlements of the key in use, and it is not the
+public list. With `all=1` the extension asks for the full catalog, so the
+authenticated list can include models the key cannot reach - a BYOK model
+whose upstream key is not configured, for example. Inclusion in the list
+is not permission to call: such a model answers `404 model_unavailable`,
+which is AnyRouter's billing rule, not a catalog defect.
+
+A model that AnyRouter serves only through a caller-supplied upstream key
+(BYOK) is listed but answers `404 model_unavailable` until that upstream
+key is configured. Those are upstream billing rules, not catalog errors.
+
+The catalog is fetched with `all=1`, so every model AnyRouter advertises
+appears - including BYOK-only models that the default endpoint omits
+until the caller can reach them. The authenticated list can therefore
+include models the key cannot reach, and a model only the key can reach
+is absent from the public list. Either way, a BYOK model stays listed
+until the caller configures its upstream key, at which point it answers.
 
 The catalog is persisted through pi's own model store, so a start without a
 network still has a model list. In offline mode (`PI_OFFLINE`) the extension
@@ -89,11 +104,15 @@ makes no request at all and serves the persisted snapshot.
 
 ## Reasoning
 
-Reasoning effort travels in the nested `reasoning: { effort }` object, which
-is the shape AnyRouter normalizes across its upstreams. The flat
-`reasoning_effort` field is accepted by the server, but the upstream then
-leaks the reasoning text into the message content, which corrupts the
-conversation.
+Reasoning effort format is chosen per-model based on which upstreams the
+model can route to:
+
+- Models that can route to nvidia upstreams use the flat `reasoning_effort`
+  field. NVIDIA rejects the nested `reasoning: { effort }` object with
+  HTTP 400, so the flat field is the only working option there.
+- All other models use the nested `reasoning: { effort }` object, which
+  avoids the leak that occurs on some upstreams (notably kilo) when using
+  the flat field.
 
 A model that declares its accepted levels is limited to those; one that only
 advertises the `reasoning` parameter gets the full ladder.
@@ -114,7 +133,64 @@ advertises the `reasoning` parameter gets the full ladder.
 ```bash
 npm test        # unit tests over the catalog mapping
 npm run typecheck
+npm run build   # tsdown ESM bundle with .d.mts (for releases)
 ```
+
+### Nx build & release
+
+`npm run build` compiles through `tsdown` (`tsdown.config.ts`) and writes
+to `dist/`. The `@nx-devkit/typescript` and `@nx-devkit/prepare-for-release`
+plugins in `nx.json` infer `typecheck`, `test`, `build` and `prepare-for-release`
+targets, so the same work runs under Nx:
+
+```bash
+npx nx build          # build dist/
+npx nx typecheck      # type-check
+npx nx test           # run the test suite
+npx nx run-many -t build --if-present   # build all projects
+```
+
+`nx.json` sets `release.version.preVersionCommand` to build `dist/` before
+versioning, and `package.json` has a `prepack` script (`npm run build`) so a
+`npm pack` / `npm publish` from a clean checkout always ships the bundle.
+`npm pack --dry-run` must list `dist/index.mjs` and `dist/index.d.mts`.
+
+### Local development
+
+Test the extension against the working tree without publishing it. Create
+`.pi/settings.json` in the project root:
+
+```json
+{
+  "extensions": ["./src/index.ts"],
+  "defaultProvider": "anyrouter-dev",
+  "defaultModel": "anyrouter/auto"
+}
+```
+
+`extensions` points pi straight at the source file, so a reload picks up every
+edit. `defaultProvider` and `defaultModel` make anyrouter-dev the default, so
+`pi` in this directory talks to AnyRouter without further flags.
+
+Project config is protected by pi's trust model, so pass `--approve` for the
+first run, or run `/trust` inside pi to save the decision:
+
+```bash
+pi --approve
+```
+
+Then:
+
+```bash
+pi --approve -p "hello"          # one-shot prompt on anyrouter-dev
+pi --approve --list-models        # the catalog
+```
+
+The key comes from `ANYROUTER_DEV_API_KEY`, or from the stored credential in
+`~/.pi/agent/auth.json` under `anyrouter-dev`. See [Configure](#configure).
+
+`.pi/` is gitignored - it points at a local path and only makes sense in one
+checkout.
 
 ## License
 

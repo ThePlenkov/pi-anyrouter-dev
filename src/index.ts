@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AnyModel, ModelsStoreEntry } from "@earendil-works/pi-ai";
 import { apiKeyTemplate, resolveApiKey, credentialApiKey, API_KEY_ENV_VARS, PRIMARY_API_KEY_ENV } from "./api-key.ts";
-import { toModelConfigs, type AnyRouterModelConfig } from "./catalog.ts";
+import { toModelConfigs, recomputeCompat, type AnyRouterModelConfig } from "./catalog.ts";
 import { fetchCatalog, type CatalogFetchOptions } from "./fetch-catalog.ts";
 import { BASE_URL, PROVIDER_ID, PROVIDER_NAME, isOffline } from "./provider-info.ts";
 
@@ -45,6 +45,12 @@ export default async function anyRouterExtension(pi: ExtensionAPI): Promise<void
 	const offline = isOffline();
 
 	let models: AnyRouterModelConfig[] = [];
+	// Serializes overlapping refreshes: pi can call `refreshModels` again
+	// while a catalog fetch is still in flight (startup, model-picker open,
+	// retry). A newer refresh must not let an older one overwrite its result, so
+	// each call stamps a generation and the result is applied only when its
+	// generation is still the latest.
+	let refreshGeneration = 0;
 	if (!offline) {
 		const options: CatalogFetchOptions = { signal: AbortSignal.timeout(15_000), apiKey };
 		try {
@@ -76,13 +82,17 @@ export default async function anyRouterExtension(pi: ExtensionAPI): Promise<void
 			// offline mode it must not reach the network - pi says so through
 			// `allowNetwork`, and the catalog it already holds stays in place.
 			if (context.allowNetwork) {
+				const generation = ++refreshGeneration;
 				const refreshed = toModelConfigs(
 					await fetchCatalog({
 						signal: context.signal,
 						apiKey: credentialApiKey(context.credential) ?? apiKey,
 					}),
 				);
-				if (refreshed.length > 0) models = refreshed;
+				// A newer refresh may have started while this one fetched; ignore a
+				// stale result so it cannot overwrite the current catalog and its
+				// per-upstream reasoning formats.
+				if (generation === refreshGeneration && refreshed.length > 0) models = refreshed;
 			}
 
 			// Persist the catalog, so the next start - online or offline -
@@ -118,7 +128,28 @@ function toStoredModels(models: AnyRouterModelConfig[]): AnyModel[] {
 		contextWindow: model.contextWindow,
 		maxTokens: model.maxTokens,
 		compat: model.compat,
+		...(model.perUpstream ? { perUpstream: model.perUpstream } : {}),
 	}));
+}
+
+/**
+ * Validate the `perUpstream` array a persisted model may carry.
+ *
+ * `perUpstream` is this extension's own field, so a snapshot written by a
+ * future or foreign version of the package can hold anything. A bare cast
+ * would accept a string or an array of nulls, and `recomputeCompat` would
+ * then call `.every()` on it and fail the refresh. Validate the shape
+ * before restoring: an array whose every entry is an object with a
+ * `backend` field.
+ */
+function validPerUpstream(value: unknown): value is AnyRouterModelConfig["perUpstream"] {
+	if (!Array.isArray(value) || value.length === 0) return false;
+	return value.every(
+		(u) =>
+			u !== null &&
+			typeof u === "object" &&
+			typeof (u as { backend?: unknown }).backend === "string",
+	);
 }
 
 /**
@@ -135,6 +166,17 @@ function fromStoredModels(stored: Readonly<ModelsStoreEntry> | undefined): AnyRo
 		if (model.type !== undefined && model.type !== "chat") continue;
 		if (typeof model.id !== "string" || typeof model.name !== "string") continue;
 		if (typeof model.contextWindow !== "number" || typeof model.maxTokens !== "number") continue;
+		// `perUpstream` is this extension's own field, carried through pi's
+		// persisted model so a restored catalog can recompute `compat`. pi
+		// does not declare it, so it is read through a narrow cast and
+		// validated before use.
+		// `perUpstream` is this extension's own field, carried through pi's
+		// persisted model so a restored catalog can recompute `compat`. pi
+		// does not declare it on its `Model` type, so read it through a cast
+		// and validate the untyped persisted value before use.
+		const rawPerUpstream = (model as { perUpstream?: unknown }).perUpstream;
+		const perUpstream =
+			validPerUpstream(rawPerUpstream) ? (rawPerUpstream as AnyRouterModelConfig["perUpstream"]) : undefined;
 		restored.push({
 			id: model.id,
 			name: model.name,
@@ -146,9 +188,16 @@ function fromStoredModels(stored: Readonly<ModelsStoreEntry> | undefined): AnyRo
 			contextWindow: model.contextWindow,
 			maxTokens: model.maxTokens,
 			compat: model.compat ?? {},
+			...(perUpstream ? { perUpstream } : {}),
 		});
 	}
-	return restored;
+	// The persisted snapshot can carry a `compat` that was correct when it
+	// was saved, but the reasoning format depends on the upstreams the
+	// model routes to, and that can change between refreshes. Recompute it
+	// from the routes the snapshot also carries, so a restored NVIDIA-only
+	// model does not keep sending the nested reasoning object and getting
+	// HTTP 400.
+	return restored.map(recomputeCompat);
 }
 
 export { toModelConfig, toModelConfigs } from "./catalog.ts";
