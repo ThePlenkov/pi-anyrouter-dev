@@ -130,30 +130,57 @@ advertises the `reasoning` parameter gets the full ladder.
 
 ## Development
 
+The project is managed with [bun](https://bun.sh) and driven by [Nx](https://nx.dev)
+through the [`@nx-devkit/sverka`](https://github.com/nx-devkit/nx.ts) plugin.
+`sverka.config.ts` defines the CI chain as a single TypeScript config; the
+plugin infers one cached Nx target per step, so each step keeps its own
+inputs, outputs and cache entry.
+
 ```bash
-npm test        # unit tests over the catalog mapping
-npm run typecheck
-npm run build   # tsdown ESM bundle with .d.mts (for releases)
+bun install          # install dependencies (bun.lock is committed)
+bun test             # unit tests over the catalog mapping
+bun run typecheck    # tsc --noEmit
+bun run build        # tsdown ESM bundle with .d.mts (for releases)
+```
+
+### Sverka pipeline
+
+`sverka.config.ts` declares the chain and the push entry that wires it
+together: `typecheck -> test -> build -> pack`. The plugin turns each step
+into an Nx target named `<pipeline>:<step>`:
+
+```bash
+nx run pi-anyrouter-dev:ci:typecheck
+nx run pi-anyrouter-dev:ci:test      # depends on ci:typecheck
+nx run pi-anyrouter-dev:ci:build     # depends on ci:test
+nx run pi-anyrouter-dev:ci:pack      # depends on ci:build
+```
+
+Validate the config and run the whole chain:
+
+```bash
+bunx sverka validate
+bunx nx run-many -t 'ci:*'            # every ci step, in order
 ```
 
 ### Nx build & release
 
-`npm run build` compiles through `tsdown` (`tsdown.config.ts`) and writes
-to `dist/`. The `@nx-devkit/typescript` and `@nx-devkit/prepare-for-release`
-plugins in `nx.json` infer `typecheck`, `test`, `build` and `prepare-for-release`
-targets, so the same work runs under Nx:
+`bun run build` compiles through `tsdown` (`tsdown.config.ts`) and writes
+to `dist/`. The `@nx-devkit/typescript`, `@nx-devkit/prepare-for-release` and
+`@nx-devkit/sverka` plugins in `nx.json` infer `typecheck`, `test`, `build`,
+`pack` and the `ci:*` targets, so the same work runs under Nx:
 
 ```bash
-npx nx build          # build dist/
-npx nx typecheck      # type-check
-npx nx test           # run the test suite
-npx nx run-many -t build --if-present   # build all projects
+bunx nx build          # build dist/
+bunx nx typecheck      # type-check
+bunx nx test           # run the test suite
+bunx nx run-many -t build --if-present   # build all projects
 ```
 
 `nx.json` sets `release.version.preVersionCommand` to build `dist/` before
-versioning, and `package.json` has a `prepack` script (`npm run build`) so a
-`npm pack` / `npm publish` from a clean checkout always ships the bundle.
-`npm pack --dry-run` must list `dist/index.mjs` and `dist/index.d.mts`.
+versioning, and `package.json` has a `prepack` script (`bun run build`) so a
+`bun pm pack` / `npm publish` from a clean checkout always ships the bundle.
+`bun pm pack --dry-run` must list `dist/index.mjs` and `dist/index.d.mts`.
 
 ### Local development
 

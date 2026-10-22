@@ -7,6 +7,10 @@
     {
       "options": {},
       "plugin": "@nx-devkit/prepare-for-release"
+    },
+    {
+      "options": {},
+      "plugin": "@nx-devkit/sverka"
     }
   ],
   "release": {

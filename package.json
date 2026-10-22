@@ -4,6 +4,7 @@
   "description": "AnyRouter (anyrouter.dev) provider for the pi coding agent - a thin layer over pi's built-in OpenAI-compatible client with a dynamically fetched model catalog",
   "license": "MIT",
   "type": "module",
+  "packageManager": "bun@1.4.3",
   "types": "./dist/index.d.mts",
   "files": [
     "LICENSE",
@@ -31,10 +32,10 @@
     ]
   },
   "scripts": {
-    "test": "node --test test/*.test.ts",
+    "test": "bun test",
     "typecheck": "tsc --noEmit",
     "build": "tsdown",
-    "prepack": "npm run build"
+    "prepack": "bun run build"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
@@ -52,6 +53,7 @@
     "@earendil-works/pi-ai": "^1.4.0",
     "@earendil-works/pi-coding-agent": "^1.4.0",
     "@nx-devkit/prepare-for-release": "^0.1.23",
+    "@nx-devkit/sverka": "^0.0.1",
     "@nx-devkit/typescript": "^0.2.19",
     "@nx/devkit": "^24.0.0",
     "@nx/js": "^24.0.0",
@@ -59,6 +61,7 @@
     "@typescript/native-preview": "^7.0.0-dev.20260621.1",
     "nx": "^24.0.0",
     "publint": "^0.3.25",
+    "sverka": "^0.2.46",
     "tsdown": "^0.23.1",
     "typescript": "^6.0.3"
   },
