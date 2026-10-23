@@ -178,8 +178,8 @@ bunx nx run-many -t build --if-present   # build all projects
 ```
 
 `nx.json` sets `release.version.preVersionCommand` to build `dist/` before
-versioning, and `package.json` has a `prepack` script (`bun run build`) so a
-`bun pm pack` / `npm publish` from a clean checkout always ships the bundle.
+versioning, and `package.json` has a `prepack` script (`bash scripts/prepack.sh`)
+so a `bun pm pack` / `npm publish` from a clean checkout always ships the bundle.
 `bun pm pack --dry-run` must list `dist/index.mjs` and `dist/index.d.mts`.
 
 ### Local development
