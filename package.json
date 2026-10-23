@@ -35,7 +35,7 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "build": "tsdown",
-    "prepack": "bun run build"
+    "prepack": "npx tsdown"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",

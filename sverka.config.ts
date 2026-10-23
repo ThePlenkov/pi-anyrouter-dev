@@ -26,10 +26,16 @@ const build = new ShellStep(ci, "build", {
 });
 
 // Publish artifacts: pack the bundle and run publint against it.
+// The tarball is declared as an artifact output so an Nx cache hit restores
+// it instead of leaving the package artifact unavailable. The shell script is
+// invoked by path so the step command stays free of inline metacharacters.
 const pack = new ShellStep(ci, "pack", {
-  command: "bun pm pack",
+  command: "bash scripts/pack.sh",
   dependsOn: [build.node.id],
-  timeout: 60_000,
+  timeout: 120_000,
+  outputs: {
+    "pi-anyrouter-dev-0.1.0.tgz": { type: "artifact", path: "pi-anyrouter-dev-0.1.0.tgz" },
+  },
 });
 
 // Every push runs the whole chain: typecheck -> test -> build -> pack.
