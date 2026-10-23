@@ -29,12 +29,14 @@ const build = new ShellStep(ci, "build", {
 // The tarball is declared as an artifact output so an Nx cache hit restores
 // it instead of leaving the package artifact unavailable. The shell script is
 // invoked by path so the step command stays free of inline metacharacters.
+// `scripts/pack.sh` normalises the packed file to `package.tgz`, so the output
+// key and the workflow upload path stay version-independent across releases.
 const pack = new ShellStep(ci, "pack", {
   command: "bash scripts/pack.sh",
   dependsOn: [build.node.id],
   timeout: 120_000,
   outputs: {
-    "pi-anyrouter-dev-0.1.0.tgz": { type: "artifact", path: "pi-anyrouter-dev-0.1.0.tgz" },
+    "package.tgz": { type: "artifact", path: "package.tgz" },
   },
 });
 
