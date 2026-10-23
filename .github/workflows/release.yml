@@ -1,0 +1,58 @@
+name: release
+
+# Publishes a tagged release of `pi-anyrouter-dev` to npm via the Nx release
+# pipeline + npm OIDC trusted publishing (no long-lived token).
+#
+# How to cut a release (do this once the bootstrap+trust below is done):
+#   1. npx nx run tools:prepare-for-release --trust true   # first time only:
+#        publishes the 0.0.0 placeholder (claims the name) + `npm trust github`
+#   2. npx nx release version --first-release               # cuts v0.1.0 tag
+#      (or: npx nx release version --first-release --specifier 0.1.0
+#       to release at the authored version instead of Nx's conventional bump)
+#   3. git push --follow-tags                              # triggers this workflow
+#
+# This workflow runs only `npm publish` (the version/tag are cut locally by
+# `nx release version`, which already ran `preVersionCommand` → build). Its
+# `npm publish` also runs `prepack` (scripts/prepack.sh → tsdown) to rebuild
+# the gitignored `dist/` from `src/`, so a clean tag checkout always ships the
+# bundle. `id-token: write` lets npm authenticate to the registry via OIDC
+# against the trusted publisher configured for this workflow file (`release.yml`).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to release (e.g. v0.1.0)"
+        required: false
+        type: string
+
+permissions:
+  id-token: write # required for npm's OIDC trusted publishing
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Publish
+        run: npm publish
