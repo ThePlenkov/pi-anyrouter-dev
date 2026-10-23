@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 2
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Setup Bun
@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 2
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Setup Bun
@@ -42,7 +42,7 @@ jobs:
     timeout-minutes: 2
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Setup Bun
@@ -53,7 +53,7 @@ jobs:
         run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run build
       - name: Upload dist
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: build-dist
           path: dist
@@ -64,7 +64,7 @@ jobs:
     timeout-minutes: 2
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Setup Bun
@@ -73,9 +73,16 @@ jobs:
           bun-version: 1.4.3
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
-      - run: bash scripts/pack.sh
-      - name: Upload pi-anyrouter-dev-0.1.0.tgz
-        uses: actions/upload-artifact@v7
+      # The build job uploads `dist/` as an artifact; pack needs it to produce
+      # a tarball, so restore it before running the pack script.
+      - name: Download dist
+        uses: actions/download-artifact@v4
         with:
-          name: pack-pi-anyrouter-dev-0.1.0.tgz
-          path: pi-anyrouter-dev-0.1.0.tgz
+          name: build-dist
+          path: dist
+      - run: bash scripts/pack.sh
+      - name: Upload package.tgz
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-tgz
+          path: package.tgz

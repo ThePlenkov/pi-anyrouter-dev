@@ -14,19 +14,19 @@
     }
   ],
   "release": {
-    "projects": ["*"],
+    "projects": ["pi-anyrouter-dev"],
     "version": {
       "conventionalCommits": true,
-      "preVersionCommand": "npx nx run-many -t build --if-present"
+      "preVersionCommand": "npx nx run-many -t build",
+      "git": {
+        "commit": true,
+        "tag": true
+      }
     },
     "changelog": {
       "workspaceChangelog": {
         "createRelease": "github"
       }
-    },
-    "git": {
-      "commit": true,
-      "tag": true
     }
   }
 }
