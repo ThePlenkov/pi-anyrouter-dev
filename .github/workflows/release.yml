@@ -14,17 +14,15 @@ on:
 
 jobs:
   release:
-    # Loop guard: skip if this is the release commit we just pushed
     if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore(release)'))
     name: Publish packages via nx release (OIDC)
     runs-on: ubuntu-latest
     concurrency:
       group: release
       cancel-in-progress: false
-    # Job-level permissions (critical for OIDC)
     permissions:
-      contents: write   # needed to push release commit + tags
-      id-token: write   # required for npm OIDC trusted publishing
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,11 +36,11 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm install --legacy-peer-deps
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@latest
       - name: Build
-        run: bun run build
+        run: npm run build
       - name: Configure git identity for release commits
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
