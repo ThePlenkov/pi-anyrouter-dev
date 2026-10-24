@@ -1,6 +1,6 @@
 {
   "name": "pi-anyrouter-dev",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "AnyRouter (anyrouter.dev) provider for the pi coding agent - a thin layer over pi's built-in OpenAI-compatible client with a dynamically fetched model catalog",
   "license": "MIT",
   "type": "module",
