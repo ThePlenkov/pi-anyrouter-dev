@@ -1,6 +1,9 @@
 name: ci
 on:
-  push: {}
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 jobs:
   typecheck:
     name: typecheck
@@ -56,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-dist
-          path: dist
+          path: packages/pi-anyrouter-dev/dist
   pack:
     name: pack
     runs-on: ubuntu-latest
@@ -73,14 +76,12 @@ jobs:
           bun-version: 1.4.3
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
-      # The build job uploads `dist/` as an artifact; pack needs it to produce
-      # a tarball, so restore it before running the pack script.
       - name: Download dist
         uses: actions/download-artifact@v4
         with:
           name: build-dist
-          path: dist
-      - run: bash scripts/pack.sh
+          path: packages/pi-anyrouter-dev/dist
+      - run: bash packages/pi-anyrouter-dev/scripts/pack.sh
       - name: Upload package.tgz
         uses: actions/upload-artifact@v4
         with:
