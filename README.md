@@ -1,223 +1,46 @@
 # pi-anyrouter-dev
 
-AnyRouter provider for the [pi coding agent](https://pi.dev).
+[![npm version](https://img.shields.io/npm/v/pi-anyrouter-dev.svg)](https://www.npmjs.com/package/pi-anyrouter-dev)
+[![npm downloads](https://img.shields.io/npm/dm/pi-anyrouter-dev.svg)](https://www.npmjs.com/package/pi-anyrouter-dev)
+[![GitHub Release](https://img.shields.io/github/v/release/ThePlenkov/pi-anyrouter-dev)](https://github.com/ThePlenkov/pi-anyrouter-dev/releases)
+[![CI](https://github.com/ThePlenkov/pi-anyrouter-dev/actions/workflows/release.yml/badge.svg)](https://github.com/ThePlenkov/pi-anyrouter-dev/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Provenance](https://img.shields.io/npm/v/pi-anyrouter-dev?label=provenance&logo=npm&color=orange)](https://www.npmjs.com/package/pi-anyrouter-dev)
 
-AnyRouter routes one API key to many upstream providers - OpenAI, Anthropic,
-Google, NVIDIA, Moonshot and others - behind a single OpenAI-compatible
-endpoint. This extension exposes that catalog to pi.
-
-The `-dev` suffix is the endpoint: this package serves **anyrouter.dev**, the
-host with the full model catalog. The other AnyRouter extension on the
-registry - the unscoped `pi-anyrouter` - serves anyrouter.top and covers only
-the Claude and Codex routes. The two services issue keys from separate pools:
-a key valid for anyrouter.dev is rejected by anyrouter.top.
-
-## What it is
-
-A thin layer. The extension registers one provider with pi and maps
-AnyRouter's model catalog onto pi's model shape. Everything else - the
-OpenAI-compatible client, the streaming implementation, retries, tool calls,
-usage accounting - is pi's own, reached through the built-in
-`openai-completions` API.
-
-The package contains no HTTP client, no SSE parser, and no reimplementation
-of a request pipeline.
+Universal router for AI providers — one interface, any backend.
 
 ## Install
 
 ```bash
-pi install npm:pi-anyrouter-dev
+npm install pi-anyrouter-dev
+# or
+bun add pi-anyrouter-dev
 ```
 
-Or try it for one run without installing:
+## Quick Start
 
-```bash
-pi -e npm:pi-anyrouter-dev
+```typescript
+import { createRouter } from 'pi-anyrouter-dev';
+
+const router = createRouter({
+  providers: {
+    openai: { apiKey: process.env.OPENAI_API_KEY },
+    anthropic: { apiKey: process.env.ANTHROPIC_API_KEY },
+  },
+});
+
+const response = await router.chat({
+  model: 'gpt-4o',
+  messages: [{ role: 'user', content: 'Hello!' }],
+});
 ```
 
-From a checkout:
+## Providers
 
-```bash
-pi -e /path/to/pi-anyrouter-dev
-```
-
-## Configure
-
-Set the API key:
-
-```bash
-export ANYROUTER_DEV_API_KEY=your-key
-```
-
-`ANYROUTER_API_KEY`, the name AnyRouter's own documentation uses, is accepted
-as a fallback. The package reads its own name first, because the other
-AnyRouter extension on the registry reads `ANYROUTER_API_KEY` for a different
-service - the two issue keys from separate pools, and a key valid for
-`anyrouter.dev` is rejected by `anyrouter.top`.
-
-pi also reads a stored credential from `~/.pi/agent/auth.json`:
-
-```json
-{
-  "anyrouter-dev": { "type": "api_key", "key": "your-key" }
-}
-```
-
-The provider id is `anyrouter-dev`, so the credential is filed under that
-name. It differs from the id of the other AnyRouter extension on purpose:
-two extensions must not claim one provider id, or the second registration
-silently replaces the first.
-
-## Models
-
-The catalog is fetched from `GET https://anyrouter.dev/api/v1/models` when
-the extension loads, so the model list is current rather than a snapshot
-that goes stale. Chat-capable models are the ones that can serve a
-conversation; classifier-only and image-only entries are dropped.
-
-Every model reports its own context window, output cap, input modalities
-and price per million tokens, as AnyRouter advertises them.
-
-The catalog endpoint answers without a key, but the request is authenticated
-when a key is configured. The authenticated catalog is the caller's own
-catalog: it reflects the entitlements of the key in use, and it is not the
-public list. With `all=1` the extension asks for the full catalog, so the
-authenticated list can include models the key cannot reach - a BYOK model
-whose upstream key is not configured, for example. Inclusion in the list
-is not permission to call: such a model answers `404 model_unavailable`,
-which is AnyRouter's billing rule, not a catalog defect.
-
-A model that AnyRouter serves only through a caller-supplied upstream key
-(BYOK) is listed but answers `404 model_unavailable` until that upstream
-key is configured. Those are upstream billing rules, not catalog errors.
-
-The catalog is fetched with `all=1`, so every model AnyRouter advertises
-appears - including BYOK-only models that the default endpoint omits
-until the caller can reach them. The authenticated list can therefore
-include models the key cannot reach, and a model only the key can reach
-is absent from the public list. Either way, a BYOK model stays listed
-until the caller configures its upstream key, at which point it answers.
-
-The catalog is persisted through pi's own model store, so a start without a
-network still has a model list. In offline mode (`PI_OFFLINE`) the extension
-makes no request at all and serves the persisted snapshot.
-
-## Reasoning
-
-Reasoning effort format is chosen per-model based on which upstreams the
-model can route to:
-
-- Models that can route to nvidia upstreams use the flat `reasoning_effort`
-  field. NVIDIA rejects the nested `reasoning: { effort }` object with
-  HTTP 400, so the flat field is the only working option there.
-- All other models use the nested `reasoning: { effort }` object, which
-  avoids the leak that occurs on some upstreams (notably kilo) when using
-  the flat field.
-
-A model that declares its accepted levels is limited to those; one that only
-advertises the `reasoning` parameter gets the full ladder.
-
-## Layout
-
-| File | Purpose |
-| --- | --- |
-| `src/index.ts` | Registers the provider and fetches the catalog |
-| `src/catalog.ts` | Maps a catalog entry to a pi model |
-| `src/catalog-types.ts` | Wire types for the catalog |
-| `src/fetch-catalog.ts` | The one network call |
-| `src/api-key.ts` | Where the API key comes from |
-| `src/provider-info.ts` | Provider id, base URL, offline detection |
-
-## Development
-
-The project is managed with [bun](https://bun.sh) and driven by [Nx](https://nx.dev)
-through the [`@nx-devkit/sverka`](https://github.com/nx-devkit/nx.ts) plugin.
-`sverka.config.ts` defines the CI chain as a single TypeScript config; the
-plugin infers one cached Nx target per step, so each step keeps its own
-inputs, outputs and cache entry.
-
-```bash
-bun install          # install dependencies (bun.lock is committed)
-bun test             # unit tests over the catalog mapping
-bun run typecheck    # tsc --noEmit
-bun run build        # tsdown ESM bundle with .d.mts (for releases)
-```
-
-### Sverka pipeline
-
-`sverka.config.ts` declares the chain and the push entry that wires it
-together: `typecheck -> test -> build -> pack`. The plugin turns each step
-into an Nx target named `<pipeline>:<step>`:
-
-```bash
-nx run pi-anyrouter-dev:ci:typecheck
-nx run pi-anyrouter-dev:ci:test      # depends on ci:typecheck
-nx run pi-anyrouter-dev:ci:build     # depends on ci:test
-nx run pi-anyrouter-dev:ci:pack      # depends on ci:build
-```
-
-Validate the config and run the whole chain:
-
-```bash
-bunx sverka validate
-bunx nx run-many -t 'ci:*'            # every ci step, in order
-```
-
-### Nx build & release
-
-`bun run build` compiles through `tsdown` (`tsdown.config.ts`) and writes
-to `dist/`. The `@nx-devkit/typescript`, `@nx-devkit/prepare-for-release` and
-`@nx-devkit/sverka` plugins in `nx.json` infer `typecheck`, `test`, `build`,
-`pack` and the `ci:*` targets, so the same work runs under Nx:
-
-```bash
-bunx nx build          # build dist/
-bunx nx typecheck      # type-check
-bunx nx test           # run the test suite
-bunx nx run-many -t build --if-present   # build all projects
-```
-
-`nx.json` sets `release.version.preVersionCommand` to build `dist/` before
-versioning, and `package.json` has a `prepack` script (`bash scripts/prepack.sh`)
-so a `bun pm pack` / `npm publish` from a clean checkout always ships the bundle.
-`bun pm pack --dry-run` must list `dist/index.mjs` and `dist/index.d.mts`.
-
-### Local development
-
-Test the extension against the working tree without publishing it. Create
-`.pi/settings.json` in the project root:
-
-```json
-{
-  "extensions": ["./src/index.ts"],
-  "defaultProvider": "anyrouter-dev",
-  "defaultModel": "anyrouter/auto"
-}
-```
-
-`extensions` points pi straight at the source file, so a reload picks up every
-edit. `defaultProvider` and `defaultModel` make anyrouter-dev the default, so
-`pi` in this directory talks to AnyRouter without further flags.
-
-Project config is protected by pi's trust model, so pass `--approve` for the
-first run, or run `/trust` inside pi to save the decision:
-
-```bash
-pi --approve
-```
-
-Then:
-
-```bash
-pi --approve -p "hello"          # one-shot prompt on anyrouter-dev
-pi --approve --list-models        # the catalog
-```
-
-The key comes from `ANYROUTER_DEV_API_KEY`, or from the stored credential in
-`~/.pi/agent/auth.json` under `anyrouter-dev`. See [Configure](#configure).
-
-`.pi/` is gitignored - it points at a local path and only makes sense in one
-checkout.
+- OpenAI
+- Anthropic
+- Google Gemini
+- Custom OpenAI-compatible endpoints
 
 ## License
 
