@@ -12,10 +12,9 @@
 ```bash
 # Required: registers the extension with pi so the provider is available
 pi install npm:pi-anyrouter-dev
-
-# Or install via npm and manually register (advanced)
-# npm install pi-anyrouter-dev
 ```
+
+> **Note:** `npm install pi-anyrouter-dev` alone only adds the package to your project. You must run `pi install npm:pi-anyrouter-dev` (or use `--extension`) to register the provider with pi.
 
 ## Quick Start
 
@@ -23,16 +22,16 @@ pi install npm:pi-anyrouter-dev
 # Set your AnyRouter API key
 export ANYROUTER_DEV_API_KEY=sk-...
 
-# Use the anyrouter-dev provider explicitly
-pi -p "What models does anyrouter-dev have?" --provider anyrouter-dev
+# Use the anyrouter-dev provider explicitly with a specific model
+pi --provider anyrouter-dev --model gpt-4o -p "Hello, world!"
 ```
 
 ## What It Does
 
 This extension registers `anyrouter-dev` as a provider in pi. It:
 
-- **Uses pi's native OpenAI-compatible client** — no custom HTTP/SSE code
-- **Fetches the live model catalog** from AnyRouter at startup and on refresh
+- **Uses pi's native OpenAI-compatible client** for provider requests — no custom HTTP/SSE code for chat/completions
+- **Fetches the live model catalog** from AnyRouter at startup (online) or restores persisted models (offline)
 - **Maps AnyRouter models to pi's model format** — pricing, context, reasoning, vision
 - **Persists the catalog** so it works offline and restores instantly on next start
 - **Handles API keys** via `ANYROUTER_DEV_API_KEY` (owned by this package) with fallback to `ANYROUTER_API_KEY`
@@ -48,35 +47,43 @@ This extension registers `anyrouter-dev` as a provider in pi. It:
 
 Keys can also be stored in pi's credential store under provider `anyrouter-dev`.
 
-### Provider Settings
+### Provider Settings (models.json)
 
-Select the provider when running pi:
-```bash
-pi --provider anyrouter-dev -p "Your prompt here"
+```json
+{
+  "providers": {
+    "anyrouter-dev": {
+      "models": [
+        { "id": "gpt-4o" },
+        { "id": "claude-3-5-sonnet" }
+      ]
+    }
+  }
+}
 ```
-
-Or set it as default in pi's settings.
 
 ## How It Works
 
-1. **Startup**: Extension loads, resolves API key, fetches catalog from AnyRouter
-2. **Mapping**: `catalog.ts` converts AnyRouter models → pi model configs (cost, context, reasoning, compat)
-3. **Registration**: Provider registered with pi using `api: "openai-completions"`
-4. **Refresh**: `refreshModels` re-fetches catalog on model-picker open / retry
-5. **Persist**: Catalog saved to pi's store; restored on next start (works offline)
+1. **Startup (online)**: Extension loads, resolves API key, fetches live catalog from AnyRouter
+2. **Startup (offline)**: Restores persisted models from pi's store without contacting AnyRouter
+3. **Mapping**: `catalog.ts` converts AnyRouter models → pi model configs (cost, context, reasoning, compat)
+4. **Registration**: Provider registered with pi using `api: "openai-completions"`
+5. **Refresh**: `refreshModels` re-fetches the catalog when pi requests a refresh (e.g., model picker)
+6. **Persist**: Catalog saved to pi's store; restored on next start (works offline)
 
 ## Architecture
 
 - `src/index.ts` — Extension entry point, provider registration, refresh logic
 - `src/catalog.ts` — Model mapping, cost parsing, reasoning/compat computation
-- `src/fetch-catalog.ts` — HTTP fetch with auth, timeout, error handling
+- `src/fetch-catalog.ts` — HTTP fetch with auth, timeout, error handling (custom HTTP for catalog)
 - `src/api-key.ts` — Key resolution priority, credential templates
 - `src/provider-info.ts` — Provider constants (id, name, base URL)
 
 ## Requirements
 
 - pi ≥ 1.3.0
-- Node.js ≥ 22 / Bun ≥ 1.2
+- Node.js ≥ 22.19
+- Bun ≥ 1.2
 - AnyRouter API key (free at anyrouter.dev)
 
 ## License
