@@ -2,6 +2,10 @@
   "plugins": [
     {
       "options": {},
+      "plugin": "@nx/js"
+    },
+    {
+      "options": {},
       "plugin": "@nx-devkit/typescript"
     },
     {
