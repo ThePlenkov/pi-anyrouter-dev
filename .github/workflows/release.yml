@@ -56,8 +56,8 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish via nx release (OIDC trust, no NPM_TOKEN)
-        run: npx nx release publish
+      - name: Publish via npm (OIDC trust, no NPM_TOKEN)
+        run: npm publish
         env:
           NPM_CONFIG_PROVENANCE: 'true'
       - name: Push release commit and tags
