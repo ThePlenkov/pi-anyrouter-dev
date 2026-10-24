@@ -9,6 +9,7 @@
   "scripts": {
     "build": "bun run build --filter=pi-anyrouter-dev",
     "test": "bun test --filter=pi-anyrouter-dev",
+    "typecheck": "bun run typecheck --filter=pi-anyrouter-dev",
     "release": "gh workflow run release.yml --ref main -f specifier=patch"
   },
   "devDependencies": {
