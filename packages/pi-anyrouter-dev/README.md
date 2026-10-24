@@ -47,20 +47,15 @@ This extension registers `anyrouter-dev` as a provider in pi. It:
 
 Keys can also be stored in pi's credential store under provider `anyrouter-dev`.
 
-### Provider Settings (models.json)
+### Model Selection
 
-```json
-{
-  "providers": {
-    "anyrouter-dev": {
-      "models": [
-        { "id": "gpt-4o" },
-        { "id": "claude-3-5-sonnet" }
-      ]
-    }
-  }
-}
+The extension fetches the full model catalog from AnyRouter dynamically. To use a specific model, pass it explicitly:
+
+```bash
+pi --provider anyrouter-dev --model gpt-4o -p "Your prompt"
 ```
+
+Or select it in pi's model picker after the catalog loads. The extension does not read static model lists from `models.json` — the catalog is always fetched from AnyRouter (or restored from pi's persisted store offline).
 
 ## How It Works
 
