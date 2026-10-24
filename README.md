@@ -1,20 +1,19 @@
 # pi-anyrouter-dev
 
-[![npm version](https://img.shields.io/npm/v/pi-anyrouter-dev.svg)](https://www.npmjs.com/package/pi-anyrouter-dev)
-[![npm downloads](https://img.shields.io/npm/dm/pi-anyrouter-dev.svg)](https://www.npmjs.com/package/pi-anyrouter-dev)
-[![GitHub Release](https://img.shields.io/github/v/release/ThePlenkov/pi-anyrouter-dev)](https://github.com/ThePlenkov/pi-anyrouter-dev/releases)
-[![CI](https://github.com/ThePlenkov/pi-anyrouter-dev/actions/workflows/release.yml/badge.svg)](https://github.com/ThePlenkov/pi-anyrouter-dev/actions/workflows/release.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Provenance](https://img.shields.io/npm/v/pi-anyrouter-dev?label=provenance&logo=npm&color=orange)](https://www.npmjs.com/package/pi-anyrouter-dev)
-
 Universal router for AI providers — one interface, any backend.
+
+## Packages
+
+| Package | Description | Version |
+|---------|-------------|---------|
+| [`pi-anyrouter-dev`](./packages/pi-anyrouter-dev) | AnyRouter provider for pi coding agent | [![npm](https://img.shields.io/npm/v/pi-anyrouter-dev.svg)](https://www.npmjs.com/package/pi-anyrouter-dev) |
 
 ## Install
 
 ```bash
-npm install pi-anyrouter-dev
+pi install npm:pi-anyrouter-dev
 # or
-bun add pi-anyrouter-dev
+npm install pi-anyrouter-dev
 ```
 
 ## Quick Start
@@ -38,9 +37,33 @@ const response = await router.chat({
 ## Providers
 
 - OpenAI
-- Anthropic
+- Anthropic  
 - Google Gemini
 - Custom OpenAI-compatible endpoints
+
+## Development
+
+This is a monorepo managed with Nx. The publishable package is in `packages/pi-anyrouter-dev/`.
+
+```bash
+# Install dependencies
+bun install
+
+# Build package
+cd packages/pi-anyrouter-dev && bun run build
+
+# Run tests
+cd packages/pi-anyrouter-dev && bun test
+
+# Release (triggers CI OIDC publish with provenance)
+gh workflow run release.yml --ref main -f specifier=patch
+```
+
+## CI/CD
+
+[![CI](https://github.com/ThePlenkov/pi-anyrouter-dev/actions/workflows/release.yml/badge.svg)](https://github.com/ThePlenkov/pi-anyrouter-dev/actions/workflows/release.yml)
+
+Publishes via GitHub Actions OIDC trusted publishing with SLSA provenance.
 
 ## License
 

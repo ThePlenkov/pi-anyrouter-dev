@@ -39,20 +39,21 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@latest
-      - name: Build
+      - name: Build package
         run: bun run build
+        working-directory: packages/pi-anyrouter-dev
       - name: Configure git identity for release commits
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-      - name: Version packages (conventional commits)
+      - name: Version package in CI
         run: |
           gh auth setup-git
           SPEC="${{ github.event.inputs.specifier }}"
           if [ "$SPEC" = "none" ] || [ -z "$SPEC" ]; then
-            npx nx release version --git-push=false
+            npx nx release version --git-push=false --projects=pi-anyrouter-dev
           else
-            npx nx release version --specifier "$SPEC" --git-push=false
+            npx nx release version --specifier "$SPEC" --git-push=false --projects=pi-anyrouter-dev
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -60,6 +61,7 @@ jobs:
         run: npm publish
         env:
           NPM_CONFIG_PROVENANCE: 'true'
+        working-directory: packages/pi-anyrouter-dev
       - name: Push release commit and tags
         run: |
           git push origin HEAD:main
