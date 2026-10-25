@@ -4,8 +4,9 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 0.1.x   | :white_check_mark: |
 | 1.x.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| < 0.1   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -64,3 +65,5 @@ We would like to thank the following researchers for responsibly disclosing secu
 ---
 
 **Last updated:** 2025-10-25
+
+**Note:** Version 0.1.x is currently supported as the project is pre-1.0. When 1.0.0 is released, the 0.x line will reach end-of-life per standard semantic versioning.
