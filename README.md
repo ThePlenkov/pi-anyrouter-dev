@@ -57,7 +57,8 @@ cd packages/pi-anyrouter-dev && bun test
 cd packages/pi-anyrouter-dev && bun run typecheck
 
 # Release (triggers CI OIDC publish with provenance)
-gh workflow run release.yml --ref main -f specifier=patch
+gh workflow run release.yml --ref main -f specifier=patch -f dryRun=false
+# Or push a version tag (e.g., v0.1.8)
 ```
 
 ## CI/CD
