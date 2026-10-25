@@ -18,7 +18,8 @@
  * catalog over `https://anyrouter.dev/api/v1`, while the other extension
  * targets `https://anyrouter.top` and only the Claude and Codex routes.
  */
-import { readStoredCredential } from "@earendil-works/pi-coding-agent";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 /** The env var this package owns and documents first. */
 export const PRIMARY_API_KEY_ENV = "ANYROUTER_DEV_API_KEY";
@@ -29,6 +30,35 @@ export const FALLBACK_API_KEY_ENV = "ANYROUTER_API_KEY";
 /** The env vars checked for the key, in priority order. */
 export const API_KEY_ENV_VARS = [PRIMARY_API_KEY_ENV, FALLBACK_API_KEY_ENV] as const;
 
+
+/**
+ * Get the agent config directory (e.g., ~/.pi/agent/)
+ * Mirrors the logic in @earendil-works/pi-coding-agent.
+ */
+function getAgentDir(): string {
+	const envDir = process.env.PI_CODING_AGENT_DIR;
+	if (envDir) {
+		return envDir.startsWith('~') ? envDir.replace('~', process.env.HOME ?? '') : envDir;
+	}
+	return join(process.env.HOME ?? '', '.pi', 'agent');
+}
+
+/**
+ * One-off synchronous read of a stored credential from an auth.json file,
+ * without instantiating a store or resolving configured key values.
+ * Mirrors the function from @earendil-works/pi-coding-agent.
+ */
+function readStoredCredential(
+	providerId: string,
+	authPath: string = join(getAgentDir(), 'auth.json'),
+): StoredCredential | undefined {
+	try {
+		const data = JSON.parse(readFileSync(authPath, 'utf-8')) as Record<string, StoredCredential>;
+		return data[providerId];
+	} catch {
+		return undefined;
+	}
+}
 /**
  * A stored credential as pi keeps it in `~/.pi/agent/auth.json`.
  *
