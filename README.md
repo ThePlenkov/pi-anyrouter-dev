@@ -1,5 +1,10 @@
 # pi-anyrouter-dev
 
+[![npm version](https://img.shields.io/npm/v/pi-anyrouter-dev.svg)](https://www.npmjs.com/package/pi-anyrouter-dev)
+[![npm downloads](https://img.shields.io/npm/dm/pi-anyrouter-dev.svg)](https://www.npmjs.com/package/pi-anyrouter-dev)
+[![Provenance](https://img.shields.io/npm/v/pi-anyrouter-dev?label=provenance&logo=npm&color=orange)](https://www.npmjs.com/package/pi-anyrouter-dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 [AnyRouter (anyrouter.dev)](https://anyrouter.dev) provider extension for the [pi coding agent](https://github.com/earendil-works/pi-coding-agent).
 
 Adds AnyRouter's model catalog (100+ models from OpenAI, Anthropic, Google, and more) as a provider in pi, using pi's built-in OpenAI-compatible client.
