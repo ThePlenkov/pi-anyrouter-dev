@@ -1,20 +1,24 @@
 name: release
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       specifier:
-        description: Force a version specifier (patch, minor, major). Leave at "none" for retry.
-        required: false
+        description: Version specifier (patch, minor, major)
+        required: true
         type: choice
-        default: none
-        options: [none, patch, minor, major]
+        options: [patch, minor, major]
+      dryRun:
+        description: Dry run (skip npm publish and git push)
+        required: false
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   release:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore(release)'))
     name: Publish packages via nx release (OIDC)
     runs-on: ubuntu-latest
     concurrency:
@@ -50,19 +54,29 @@ jobs:
         run: |
           gh auth setup-git
           SPEC="${{ github.event.inputs.specifier }}"
-          if [ "$SPEC" = "none" ] || [ -z "$SPEC" ]; then
-            npx nx release version --git-push=false --projects=pi-anyrouter-dev
+          if [ -z "$SPEC" ]; then
+            # Tag push: derive from tag name
+            TAG="${GITHUB_REF_NAME}"
+            if [[ "$TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              echo "Tag push detected: $TAG - using existing version"
+              # Version is already in package.json from the tag
+            else
+              echo "Unknown tag format: $TAG"
+              exit 1
+            fi
           else
             npx nx release version --specifier "$SPEC" --git-push=false --projects=pi-anyrouter-dev
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish via npm (OIDC trust, no NPM_TOKEN)
+        if: ${{ !inputs.dryRun }}
         run: npm publish
         env:
           NPM_CONFIG_PROVENANCE: 'true'
         working-directory: packages/pi-anyrouter-dev
       - name: Push release commit and tags
+        if: ${{ !inputs.dryRun && github.event_name == 'workflow_dispatch' }}
         run: |
           git push origin HEAD:main
           git push origin --tags
