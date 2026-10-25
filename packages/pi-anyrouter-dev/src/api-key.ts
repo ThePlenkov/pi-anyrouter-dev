@@ -19,6 +19,7 @@
  * targets `https://anyrouter.top` and only the Claude and Codex routes.
  */
 import { readFileSync } from "fs";
+import { homedir } from "os";
 import { join } from "path";
 
 /** The env var this package owns and documents first. */
@@ -38,9 +39,9 @@ export const API_KEY_ENV_VARS = [PRIMARY_API_KEY_ENV, FALLBACK_API_KEY_ENV] as c
 function getAgentDir(): string {
 	const envDir = process.env.PI_CODING_AGENT_DIR;
 	if (envDir) {
-		return envDir.startsWith('~') ? envDir.replace('~', process.env.HOME ?? '') : envDir;
+		return envDir.startsWith('~') ? envDir.replace('~', homedir()) : envDir;
 	}
-	return join(process.env.HOME ?? '', '.pi', 'agent');
+	return join(homedir(), '.pi', 'agent');
 }
 
 /**
@@ -53,7 +54,8 @@ function readStoredCredential(
 	authPath: string = join(getAgentDir(), 'auth.json'),
 ): StoredCredential | undefined {
 	try {
-		const data = JSON.parse(readFileSync(authPath, 'utf-8')) as Record<string, StoredCredential>;
+		const raw = readFileSync(authPath, 'utf-8');
+		const data = JSON.parse(raw.replace(/^﻿/, '')) as Record<string, StoredCredential>;
 		return data[providerId];
 	} catch {
 		return undefined;
