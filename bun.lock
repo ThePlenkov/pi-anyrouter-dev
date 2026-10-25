@@ -18,7 +18,7 @@
     },
     "packages/pi-anyrouter-dev": {
       "name": "pi-anyrouter-dev",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "devDependencies": {
         "@earendil-works/pi-ai": "^1.4.0",
         "@earendil-works/pi-coding-agent": "^1.4.0",
