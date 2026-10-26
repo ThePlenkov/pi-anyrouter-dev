@@ -98,13 +98,13 @@ jobs:
       - name: Pack all packages
         run: |
           # Pack @pi-extensions/shared
-          cp -r dist-temp/packages/shared/dist packages/shared/dist
+          cp -r dist-temp/shared/dist packages/shared/dist
           cd packages/shared && bash scripts/pack.sh && cd ../..
           # Pack pi-anyrouter-dev
-          cp -r dist-temp/packages/providers/anyrouter-dev/dist packages/providers/anyrouter-dev/dist
+          cp -r dist-temp/providers/anyrouter-dev/dist packages/providers/anyrouter-dev/dist
           cd packages/providers/anyrouter-dev && bash scripts/pack.sh && cd ../../..
           # Pack pi-aihubmix-com
-          cp -r dist-temp/packages/providers/aihubmix-com/dist packages/providers/aihubmix-com/dist
+          cp -r dist-temp/providers/aihubmix-com/dist packages/providers/aihubmix-com/dist
           cd packages/providers/aihubmix-com && bash scripts/pack.sh && cd ../../..
       - name: Upload package.tgz artifacts
         uses: actions/upload-artifact@v4

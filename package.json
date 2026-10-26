@@ -8,9 +8,9 @@
     "packages/providers/*"
   ],
   "scripts": {
-    "build": "bun run build --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared",
-    "test": "bun test --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared",
-    "typecheck": "bun run typecheck --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared",
+    "build": "bun run --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared build",
+    "test": "bun run --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared test",
+    "typecheck": "bun run --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared typecheck",
     "release": "gh workflow run release.yml --ref main -f specifier=patch"
   },
   "devDependencies": {

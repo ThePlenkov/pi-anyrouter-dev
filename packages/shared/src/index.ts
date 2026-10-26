@@ -214,6 +214,7 @@ export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOpti
 
 		const response = await fetch(url, { // codacy:ignore SSRF -- URL validated by validateCatalogUrl()
 			headers,
+			redirect: "error",
 			signal: controller.signal,
 		});
 		if (!response.ok) {

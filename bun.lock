@@ -20,7 +20,7 @@
       "name": "pi-aihubmix-com",
       "version": "0.1.0",
       "dependencies": {
-        "@pi-extensions/shared": "workspace:*",
+        "@pi-extensions/shared": "^0.1.0",
       },
       "devDependencies": {
         "@earendil-works/pi-ai": "^1.4.0",
@@ -42,7 +42,7 @@
       "name": "pi-anyrouter-dev",
       "version": "0.1.7",
       "dependencies": {
-        "@pi-extensions/shared": "workspace:*",
+        "@pi-extensions/shared": "^0.1.0",
       },
       "devDependencies": {
         "@earendil-works/pi-ai": "^1.4.0",
