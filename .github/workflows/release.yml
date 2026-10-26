@@ -71,10 +71,10 @@ jobs:
       - name: Publish packages via npm (OIDC trust, no NPM_TOKEN)
         if: ${{ !inputs.dryRun }}
         run: |
-          # Publish in dependency order: shared first, then providers
+          # Publish in dependency order: shared first, then providers, then hub
           # Skip packages already published at the intended version to make retries safe
           set -e
-          for pkg in "packages/shared" "packages/providers/anyrouter-dev" "packages/providers/aihubmix-com"; do
+          for pkg in "packages/shared" "packages/providers/anyrouter-dev" "packages/providers/aihubmix-com" "packages/pi-hub"; do
             pushd "$pkg" >/dev/null
             VERSION=$(jq -r .version package.json)
             NAME=$(jq -r .name package.json)
