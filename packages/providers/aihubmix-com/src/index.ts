@@ -74,9 +74,10 @@ export default async function aihubmixExtension(pi: ExtensionAPI): Promise<void>
 			// pi calls this on startup and on every model-picker refresh. In
 			// offline mode it must not reach the network - pi says so through
 			// `allowNetwork`, and the catalog it already holds stays in place.
+			let refreshed: AIHubMixModelConfig[] = [];
 			if (context.allowNetwork) {
 				const generation = ++refreshGeneration;
-				const refreshed = toModelConfigs(
+				refreshed = toModelConfigs(
 					await fetchCatalog({
 						signal: context.signal,
 						apiKey: credentialApiKey(context.credential) ?? apiKey,
@@ -89,8 +90,11 @@ export default async function aihubmixExtension(pi: ExtensionAPI): Promise<void>
 
 			// Persist the catalog, so the next start - online or offline -
 			// has a model list even before the first refresh completes.
+			// Only update checkedAt when a successful network fetch returns models.
+			// If the fetch returned empty, we keep the old checkedAt from stored.
 			if (models.length > 0) {
-				const checkedAt = context.allowNetwork ? Date.now() : context.stored?.checkedAt;
+				const hasNewModels = context.allowNetwork && refreshed.length > 0;
+				const checkedAt = hasNewModels ? Date.now() : context.stored?.checkedAt;
 				await context.publish({
 					persist: {
 						models: toStoredModels(models),

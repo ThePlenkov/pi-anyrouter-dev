@@ -13,6 +13,9 @@ import aihubmixExtension from "../../providers/aihubmix-com/src/index";
  * Zero external dependencies at runtime — tsdown bundles everything.
  */
 export default async function piHubExtension(pi: ExtensionAPI): Promise<void> {
-	await anyRouterExtension(pi);
-	await aihubmixExtension(pi);
+	// Run both provider registrations in parallel to avoid sequential timeout delays
+	await Promise.all([
+		anyRouterExtension(pi),
+		aihubmixExtension(pi),
+	]);
 }
