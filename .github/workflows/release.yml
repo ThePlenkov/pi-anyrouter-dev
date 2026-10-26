@@ -28,14 +28,14 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@f73c653f21e4d7a82925cd3a6ab9e0b1a47828f5 # v2.0.0
         with:
           bun-version: 'latest'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.0.2
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
