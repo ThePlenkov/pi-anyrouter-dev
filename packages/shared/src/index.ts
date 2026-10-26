@@ -140,6 +140,39 @@ export function isOffline(env: NodeJS.ProcessEnv = process.env): boolean {
 }
 
 /**
+ * Allowed catalog domains to prevent SSRF.
+ * Only these domains are permitted for catalog fetching.
+ */
+const ALLOWED_CATALOG_DOMAINS = [
+	"anyrouter.dev",
+	"aihubmix.com",
+	"api.inferera.com",
+] as const;
+
+/**
+ * Validate that a catalog URL is from an allowed domain.
+ * Prevents SSRF by restricting fetch to known provider catalog endpoints.
+ */
+function validateCatalogUrl(url: string): void {
+	try {
+		const parsed = new URL(url);
+		if (parsed.protocol !== "https:") {
+			throw new Error("Catalog URL must use HTTPS");
+		}
+		const hostname = parsed.hostname;
+		const allowed = ALLOWED_CATALOG_DOMAINS.some(
+			(domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+		);
+		if (!allowed) {
+			throw new Error(`Catalog domain not allowed: ${hostname}`);
+		}
+	} catch (err) {
+		if (err instanceof Error && err.message.startsWith("Catalog")) throw err;
+		throw new Error(`Invalid catalog URL: ${url}`);
+	}
+}
+
+/**
  * Options for fetching a model catalog.
  */
 export interface CatalogFetchOptions {
@@ -152,11 +185,16 @@ export interface CatalogFetchOptions {
 /**
  * Fetch a JSON catalog from a URL with auth, timeout, and abort handling.
  *
- * @param url - The catalog URL.
+ * The URL is validated against an allowlist of known provider catalog domains
+ * to prevent SSRF. Only HTTPS URLs from approved domains are accepted.
+ *
+ * @param url - The catalog URL (must be from an allowed domain).
  * @param options - The fetch options.
  * @returns The parsed JSON response.
  */
 export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOptions): Promise<T> {
+	validateCatalogUrl(url);
+
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 15_000);
 	const onAbort = (): void => controller.abort();
@@ -179,4 +217,3 @@ export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOpti
 		options.signal.removeEventListener("abort", onAbort);
 	}
 }
-
