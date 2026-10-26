@@ -75,6 +75,7 @@ export default async function aihubmixExtension(pi: ExtensionAPI): Promise<void>
 			// offline mode it must not reach the network - pi says so through
 			// `allowNetwork`, and the catalog it already holds stays in place.
 			let refreshed: AIHubMixModelConfig[] = [];
+			let refreshAccepted = false;
 			if (context.allowNetwork) {
 				const generation = ++refreshGeneration;
 				refreshed = toModelConfigs(
@@ -85,15 +86,19 @@ export default async function aihubmixExtension(pi: ExtensionAPI): Promise<void>
 				);
 				// A newer refresh may have started while this one fetched; ignore a
 				// stale result so it cannot overwrite the current catalog.
-				if (generation === refreshGeneration && refreshed.length > 0) models = refreshed;
+				if (generation === refreshGeneration && refreshed.length > 0) {
+					models = refreshed;
+					refreshAccepted = true;
+				}
 			}
 
 			// Persist the catalog, so the next start - online or offline -
 			// has a model list even before the first refresh completes.
-			// Only update checkedAt when a successful network fetch returns models.
-			// If the fetch returned empty, we keep the old checkedAt from stored.
+			// Only update checkedAt when a successful network fetch returns models
+			// AND the refresh was accepted (not stale). If the fetch returned empty
+			// or was stale, we keep the old checkedAt from stored.
 			if (models.length > 0) {
-				const hasNewModels = context.allowNetwork && refreshed.length > 0;
+				const hasNewModels = refreshAccepted;
 				const checkedAt = hasNewModels ? Date.now() : context.stored?.checkedAt;
 				await context.publish({
 					persist: {
