@@ -1,0 +1,65 @@
+{
+  "name": "pi-aihubmix-com",
+  "version": "0.1.0",
+  "description": "AIHubMix (aihubmix.com) provider for the pi coding agent - a thin layer over pi's built-in OpenAI-compatible client with a dynamically fetched model catalog",
+  "license": "MIT",
+  "type": "module",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist"
+  ],
+  "keywords": [
+    "pi",
+    "pi-package",
+    "pi-extension",
+    "aihubmix"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ThePlenkov/pi-extensions.git",
+    "directory": "packages/providers/aihubmix-com"
+  },
+  "bugs": {
+    "url": "https://github.com/ThePlenkov/pi-extensions/issues"
+  },
+  "homepage": "https://github.com/ThePlenkov/pi-extensions/tree/main/packages/providers/aihubmix-com#readme",
+  "pi": {
+    "extensions": [
+      "./dist/index.mjs"
+    ]
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "build": "tsdown",
+    "prepack": "bash scripts/prepack.sh"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-ai": {
+      "optional": true
+    },
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@pi-extensions/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "^1.4.0",
+    "@earendil-works/pi-coding-agent": "^1.4.0",
+    "@pi-extensions/shared": "workspace:*",
+    "@types/node": "^22.20.5",
+    "typescript": "^6.0.3"
+  },
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  }
+}

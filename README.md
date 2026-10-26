@@ -1,45 +1,58 @@
-# pi-anyrouter-dev
+# pi-extensions
 
 [![npm version](https://img.shields.io/npm/v/pi-anyrouter-dev.svg)](https://www.npmjs.com/package/pi-anyrouter-dev)
 [![npm downloads](https://img.shields.io/npm/dm/pi-anyrouter-dev.svg)](https://www.npmjs.com/package/pi-anyrouter-dev)
-[![Provenance](https://img.shields.io/npm/v/pi-anyrouter-dev?label=provenance&logo=npm&color=orange)](https://www.npmjs.com/package/pi-anyrouter-dev)
+[![npm version](https://img.shields.io/npm/v/pi-aihubmix-com.svg)](https://www.npmjs.com/package/pi-aihubmix-com)
+[![npm downloads](https://img.shields.io/npm/dm/pi-aihubmix-com.svg)](https://www.npmjs.com/package/pi-aihubmix-com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[AnyRouter (anyrouter.dev)](https://anyrouter.dev) provider extension for the [pi coding agent](https://github.com/earendil-works/pi-coding-agent).
+Provider extensions for the [pi coding agent](https://github.com/earendil-works/pi-coding-agent).
 
-Adds AnyRouter's model catalog (100+ models from OpenAI, Anthropic, Google, and more) as a provider in pi, using pi's built-in OpenAI-compatible client.
+This monorepo contains multiple provider extensions that add model providers to pi using pi's built-in OpenAI-compatible client.
+
+## Packages
+
+| Package | Provider | Registry | Description |
+|---------|----------|----------|-------------|
+| [`pi-anyrouter-dev`](packages/providers/anyrouter-dev) | AnyRouter (anyrouter.dev) | [npm](https://www.npmjs.com/package/pi-anyrouter-dev) | Full model catalog from AnyRouter |
+| [`pi-aihubmix-com`](packages/providers/aihubmix-com) | AIHubMix (aihubmix.com) | [npm](https://www.npmjs.com/package/pi-aihubmix-com) | Unified API for 100+ models |
+| [`@pi-extensions/shared`](packages/shared) | — | [npm](https://www.npmjs.com/package/@pi-extensions/shared) | Shared utilities for providers |
 
 ## Install
 
 ```bash
+# Install AnyRouter provider
 pi install npm:pi-anyrouter-dev
+
+# Install AIHubMix provider
+pi install npm:pi-aihubmix-com
 ```
 
 Or add to your pi extensions config:
 
 ```json
 {
-  "extensions": ["npm:pi-anyrouter-dev"]
+  "extensions": ["npm:pi-anyrouter-dev", "npm:pi-aihubmix-com"]
 }
 ```
 
 ## Configuration
 
-Set your AnyRouter API key:
+### AnyRouter (pi-anyrouter-dev)
 
 ```bash
 export ANYROUTER_DEV_API_KEY=your-key
 ```
 
-The extension also accepts `ANYROUTER_API_KEY` as a fallback.
+Also accepts `ANYROUTER_API_KEY` as a fallback.
 
-## How it works
+### AIHubMix (pi-aihubmix-com)
 
-- Registers `anyrouter-dev` as a provider in pi
-- Fetches the live model catalog from AnyRouter on startup (with 15s timeout)
-- Caches the catalog locally for offline use
-- Refreshes the catalog on model-picker open
-- Uses pi's native `openai-completions` streaming client — no custom HTTP/SSE code
+```bash
+export AIHUBMIX_COM_API_KEY=your-key
+```
+
+Also accepts `AIHUBMIX_API_KEY` as a fallback.
 
 ## Development
 
@@ -47,14 +60,14 @@ The extension also accepts `ANYROUTER_API_KEY` as a fallback.
 # Install dependencies
 bun install
 
-# Build
-cd packages/pi-anyrouter-dev && bun run build
+# Build all packages
+bun run build
 
-# Test
-cd packages/pi-anyrouter-dev && bun test
+# Test all packages
+bun test
 
-# Typecheck
-cd packages/pi-anyrouter-dev && bun run typecheck
+# Typecheck all packages
+bun run typecheck
 
 # Release (triggers CI OIDC publish with provenance)
 gh workflow run release.yml --ref main -f specifier=patch -f dryRun=false
@@ -62,8 +75,6 @@ gh workflow run release.yml --ref main -f specifier=patch -f dryRun=false
 ```
 
 ## CI/CD
-
-[![CI](https://github.com/ThePlenkov/pi-anyrouter-dev/actions/workflows/ci.yml/badge.svg)](https://github.com/ThePlenkov/pi-anyrouter-dev/actions/workflows/ci.yml)
 
 Publishes via GitHub Actions OIDC trusted publishing with SLSA provenance.
 

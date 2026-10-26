@@ -1,4 +1,4 @@
-import type { AnyRouterModel, AnyRouterUpstream } from "./catalog-types.ts";
+import type { AnyRouterModel, AnyRouterUpstream } from "./catalog-types";
 
 /**
  * Reasoning effort values AnyRouter accepts. A request carrying any other

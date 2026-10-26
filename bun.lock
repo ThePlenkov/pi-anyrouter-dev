@@ -16,9 +16,53 @@
         "tsdown": "^0.23.1",
       },
     },
-    "packages/pi-anyrouter-dev": {
+    "packages/providers/aihubmix-com": {
+      "name": "pi-aihubmix-com",
+      "version": "0.1.0",
+      "dependencies": {
+        "@pi-extensions/shared": "workspace:*",
+      },
+      "devDependencies": {
+        "@earendil-works/pi-ai": "^1.4.0",
+        "@earendil-works/pi-coding-agent": "^1.4.0",
+        "@pi-extensions/shared": "workspace:*",
+        "@types/node": "^22.20.5",
+        "typescript": "^6.0.3",
+      },
+      "peerDependencies": {
+        "@earendil-works/pi-ai": "*",
+        "@earendil-works/pi-coding-agent": "*",
+      },
+      "optionalPeers": [
+        "@earendil-works/pi-ai",
+        "@earendil-works/pi-coding-agent",
+      ],
+    },
+    "packages/providers/anyrouter-dev": {
       "name": "pi-anyrouter-dev",
       "version": "0.1.7",
+      "dependencies": {
+        "@pi-extensions/shared": "workspace:*",
+      },
+      "devDependencies": {
+        "@earendil-works/pi-ai": "^1.4.0",
+        "@earendil-works/pi-coding-agent": "^1.4.0",
+        "@pi-extensions/shared": "workspace:*",
+        "@types/node": "^22.20.5",
+        "typescript": "^6.0.3",
+      },
+      "peerDependencies": {
+        "@earendil-works/pi-ai": "*",
+        "@earendil-works/pi-coding-agent": "*",
+      },
+      "optionalPeers": [
+        "@earendil-works/pi-ai",
+        "@earendil-works/pi-coding-agent",
+      ],
+    },
+    "packages/shared": {
+      "name": "@pi-extensions/shared",
+      "version": "0.1.0",
       "devDependencies": {
         "@earendil-works/pi-ai": "^1.4.0",
         "@earendil-works/pi-coding-agent": "^1.4.0",
@@ -355,6 +399,8 @@
     "@nx/workspace": ["@nx/workspace@24.0.0", "", { "dependencies": { "@nx/devkit": "24.0.0", "@zkochan/js-yaml": "0.0.7", "chalk": "^4.1.0", "nx": "24.0.0", "picomatch": "4.0.4", "semver": "^7.6.3", "tslib": "^2.3.0", "yargs-parser": "21.1.1" } }, "sha512-0NkTGAdqvMvkPWoHJSfeXCMRFtlKwN8Xk1y1yD0+aahUfSeLlmeuywTSGR6Ynot3ugFkWt7P/3va9A2Vv2PEbQ=="],
 
     "@oxc-project/types": ["@oxc-project/types@0.155.0", "", {}, "sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q=="],
+
+    "@pi-extensions/shared": ["@pi-extensions/shared@workspace:packages/shared"],
 
     "@protobufjs/aspromise": ["@protobufjs/aspromise@1.1.2", "", {}, "sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ=="],
 
@@ -892,7 +938,9 @@
 
     "path-type": ["path-type@4.0.0", "", {}, "sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw=="],
 
-    "pi-anyrouter-dev": ["pi-anyrouter-dev@workspace:packages/pi-anyrouter-dev"],
+    "pi-aihubmix-com": ["pi-aihubmix-com@workspace:packages/providers/aihubmix-com"],
+
+    "pi-anyrouter-dev": ["pi-anyrouter-dev@workspace:packages/providers/anyrouter-dev"],
 
     "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
 

@@ -1,36 +1,15 @@
 {
-  "name": "pi-anyrouter-dev",
-  "version": "0.1.7",
-  "description": "AnyRouter (anyrouter.dev) provider for the pi coding agent - a thin layer over pi's built-in OpenAI-compatible client with a dynamically fetched model catalog",
+  "name": "@pi-extensions/shared",
+  "version": "0.1.0",
+  "description": "Shared utilities for pi extensions (providers)",
   "license": "MIT",
   "type": "module",
-  "packageManager": "bun@1.4.3",
   "types": "./dist/index.d.mts",
   "files": [
     "LICENSE",
     "README.md",
     "dist"
   ],
-  "keywords": [
-    "pi",
-    "pi-package",
-    "pi-extension",
-    "anyrouter"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ThePlenkov/pi-anyrouter-dev.git",
-    "directory": "packages/pi-anyrouter-dev"
-  },
-  "bugs": {
-    "url": "https://github.com/ThePlenkov/pi-anyrouter-dev/issues"
-  },
-  "homepage": "https://github.com/ThePlenkov/pi-anyrouter-dev/tree/main/packages/pi-anyrouter-dev#readme",
-  "pi": {
-    "extensions": [
-      "./dist/index.mjs"
-    ]
-  },
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit",

@@ -1,15 +1,16 @@
 {
-  "name": "pi-anyrouter-dev-monorepo",
+  "name": "pi-extensions",
   "version": "0.0.0",
   "private": true,
   "packageManager": "bun@1.4.3",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "packages/providers/*"
   ],
   "scripts": {
-    "build": "bun run build --filter=pi-anyrouter-dev",
-    "test": "bun test --filter=pi-anyrouter-dev",
-    "typecheck": "bun run typecheck --filter=pi-anyrouter-dev",
+    "build": "bun run build --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared",
+    "test": "bun test --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared",
+    "typecheck": "bun run typecheck --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared",
     "release": "gh workflow run release.yml --ref main -f specifier=patch"
   },
   "devDependencies": {

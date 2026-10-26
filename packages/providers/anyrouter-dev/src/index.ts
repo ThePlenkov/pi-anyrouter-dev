@@ -1,11 +1,11 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AnyModel, ModelsStoreEntry } from "@earendil-works/pi-ai";
-import { apiKeyTemplate, resolveApiKey, credentialApiKey, API_KEY_ENV_VARS, PRIMARY_API_KEY_ENV } from "./api-key.ts";
-import { toModelConfigs, recomputeCompat, type AnyRouterModelConfig } from "./catalog.ts";
-import { fetchCatalog, type CatalogFetchOptions } from "./fetch-catalog.ts";
-import { BASE_URL, PROVIDER_ID, PROVIDER_NAME, isOffline } from "./provider-info.ts";
+import { apiKeyTemplate, resolveApiKey, credentialApiKey, API_KEY_ENV_VARS, PRIMARY_API_KEY_ENV } from "./api-key";
+import { toModelConfigs, recomputeCompat, type AnyRouterModelConfig } from "./catalog";
+import { fetchCatalog, type CatalogFetchOptions } from "./fetch-catalog";
+import { BASE_URL, PROVIDER_ID, PROVIDER_NAME, isOffline } from "./provider-info";
 
-export { PROVIDER_ID, PROVIDER_NAME, BASE_URL, isOffline } from "./provider-info.ts";
+export { PROVIDER_ID, PROVIDER_NAME, BASE_URL, isOffline } from "./provider-info";
 
 /**
  * The env vars holding the AnyRouter API key, in priority order.
@@ -200,8 +200,8 @@ function fromStoredModels(stored: Readonly<ModelsStoreEntry> | undefined): AnyRo
 	return restored.map(recomputeCompat);
 }
 
-export { toModelConfig, toModelConfigs } from "./catalog.ts";
-export { apiKeyTemplate, resolveApiKey, credentialApiKey, API_KEY_ENV_VARS } from "./api-key.ts";
-export type { AnyRouterModelConfig } from "./catalog.ts";
-export type { AnyRouterCatalog, AnyRouterModel } from "./catalog-types.ts";
+export { toModelConfig, toModelConfigs } from "./catalog";
+export { apiKeyTemplate, resolveApiKey, credentialApiKey, API_KEY_ENV_VARS } from "./api-key";
+export type { AnyRouterModelConfig } from "./catalog";
+export type { AnyRouterCatalog, AnyRouterModel } from "./catalog-types";
 

@@ -18,9 +18,8 @@
  * catalog over `https://anyrouter.dev/api/v1`, while the other extension
  * targets `https://anyrouter.top` and only the Claude and Codex routes.
  */
-import { readFileSync } from "fs";
-import { homedir } from "os";
-import { join } from "path";
+import { resolveApiKey as sharedResolveApiKey, apiKeyTemplate as sharedApiKeyTemplate, credentialApiKey as sharedCredentialApiKey, type ResolveApiKeyOptions, type ApiKeyTemplateOptions } from "@pi-extensions/shared";
+import { PROVIDER_ID } from "./provider-info";
 
 /** The env var this package owns and documents first. */
 export const PRIMARY_API_KEY_ENV = "ANYROUTER_DEV_API_KEY";
@@ -31,46 +30,8 @@ export const FALLBACK_API_KEY_ENV = "ANYROUTER_API_KEY";
 /** The env vars checked for the key, in priority order. */
 export const API_KEY_ENV_VARS = [PRIMARY_API_KEY_ENV, FALLBACK_API_KEY_ENV] as const;
 
-
-/**
- * Get the agent config directory (e.g., ~/.pi/agent/)
- * Mirrors the logic in @earendil-works/pi-coding-agent.
- */
-function getAgentDir(): string {
-	const envDir = process.env.PI_CODING_AGENT_DIR;
-	if (envDir) {
-		return envDir.startsWith('~') ? envDir.replace('~', homedir()) : envDir;
-	}
-	return join(homedir(), '.pi', 'agent');
-}
-
-/**
- * One-off synchronous read of a stored credential from an auth.json file,
- * without instantiating a store or resolving configured key values.
- * Mirrors the function from @earendil-works/pi-coding-agent.
- */
-function readStoredCredential(
-	providerId: string,
-	authPath: string = join(getAgentDir(), 'auth.json'),
-): StoredCredential | undefined {
-	try {
-		const raw = readFileSync(authPath, 'utf-8');
-		const data = JSON.parse(raw.replace(/^﻿/, '')) as Record<string, StoredCredential>;
-		return data[providerId];
-	} catch {
-		return undefined;
-	}
-}
-/**
- * A stored credential as pi keeps it in `~/.pi/agent/auth.json`.
- *
- * Only the api-key shape is read. An OAuth credential has no `key` field, and
- * AnyRouter does not use OAuth.
- */
-interface StoredCredential {
-	type?: string;
-	key?: string;
-}
+/** The primary env var name (for external use). */
+export const API_KEY_ENV = PRIMARY_API_KEY_ENV;
 
 /**
  * The `apiKey` template pi resolves at request time.
@@ -89,11 +50,7 @@ interface StoredCredential {
  * @returns The template pi should resolve.
  */
 export function apiKeyTemplate(env: NodeJS.ProcessEnv = process.env): string {
-	const primary = env[PRIMARY_API_KEY_ENV];
-	if (primary !== undefined && primary !== "") return `$${PRIMARY_API_KEY_ENV}`;
-	const fallback = env[FALLBACK_API_KEY_ENV];
-	if (fallback !== undefined && fallback !== "") return `$${FALLBACK_API_KEY_ENV}`;
-	return `$${PRIMARY_API_KEY_ENV}`;
+	return sharedApiKeyTemplate({ envVars: API_KEY_ENV_VARS, env } as ApiKeyTemplateOptions);
 }
 
 /**
@@ -106,10 +63,7 @@ export function apiKeyTemplate(env: NodeJS.ProcessEnv = process.env): string {
  * @param credential - The credential pi resolved, if any.
  * @returns The key, or `undefined` when the credential carries none.
  */
-export function credentialApiKey(credential: { type?: string; key?: unknown } | undefined): string | undefined {
-	if (!credential || credential.type !== "api_key") return undefined;
-	return typeof credential.key === "string" && credential.key !== "" ? credential.key : undefined;
-}
+export const credentialApiKey = sharedCredentialApiKey;
 
 /**
  * Read the API key for a provider id.
@@ -123,11 +77,6 @@ export function credentialApiKey(credential: { type?: string; key?: unknown } | 
  * @param env - The environment to read from. Defaults to `process.env`.
  * @returns The key, or `undefined` when none is configured.
  */
-export function resolveApiKey(providerId: string, env: NodeJS.ProcessEnv = process.env): string | undefined {
-	for (const name of API_KEY_ENV_VARS) {
-		const value = env[name];
-		if (value !== undefined && value !== "") return value;
-	}
-
-	return credentialApiKey(readStoredCredential(providerId) as StoredCredential | undefined);
+export function resolveApiKey(providerId: string = PROVIDER_ID, env: NodeJS.ProcessEnv = process.env): string | undefined {
+	return sharedResolveApiKey({ envVars: API_KEY_ENV_VARS, providerId, env } as ResolveApiKeyOptions);
 }

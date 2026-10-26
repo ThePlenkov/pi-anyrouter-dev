@@ -18,7 +18,7 @@
     }
   ],
   "release": {
-    "projects": ["pi-anyrouter-dev"],
+    "projects": ["pi-anyrouter-dev", "pi-aihubmix-com", "@pi-extensions/shared"],
     "version": {
       "conventionalCommits": true,
       "preVersionCommand": "npx nx run-many -t build",

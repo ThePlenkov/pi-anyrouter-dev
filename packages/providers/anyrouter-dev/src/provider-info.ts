@@ -1,3 +1,5 @@
+import { isOffline as sharedIsOffline } from "@pi-extensions/shared";
+
 /**
  * The provider id pi stores the entry under.
  *
@@ -24,6 +26,4 @@ export const BASE_URL = "https://anyrouter.dev/api/v1";
  * extension consistent with the rest of pi: no catalog request at load, and
  * the persisted snapshot is used instead.
  */
-export function isOffline(env: NodeJS.ProcessEnv = process.env): boolean {
-	return env.PI_OFFLINE !== undefined;
-}
+export const isOffline = sharedIsOffline;
