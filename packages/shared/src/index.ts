@@ -205,8 +205,7 @@ export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOpti
 		const headers: Record<string, string> = {};
 		if (options.apiKey) headers.Authorization = `Bearer ${options.apiKey}`;
 
-		// codacy-ignore: SSRF -- URL validated by validateCatalogUrl() which throws on invalid input
-		const response = await fetch(url, {
+		const response = await fetch(url, { // codacy:ignore SSRF -- URL validated by validateCatalogUrl()
 			headers,
 			signal: controller.signal,
 		});
