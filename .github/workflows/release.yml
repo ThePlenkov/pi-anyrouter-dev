@@ -43,14 +43,13 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@latest
-      - name: Build package
+      - name: Build all packages
         run: bun run build
-        working-directory: packages/pi-anyrouter-dev
       - name: Configure git identity for release commits
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-      - name: Version package in CI
+      - name: Version packages in CI
         run: |
           gh auth setup-git
           SPEC="${{ github.event.inputs.specifier }}"
@@ -65,16 +64,19 @@ jobs:
               exit 1
             fi
           else
-            npx nx release version --specifier "$SPEC" --git-push=false --projects=pi-anyrouter-dev
+            npx nx release version --specifier "$SPEC" --git-push=false
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish via npm (OIDC trust, no NPM_TOKEN)
+      - name: Publish packages via npm (OIDC trust, no NPM_TOKEN)
         if: ${{ !inputs.dryRun }}
-        run: npm publish
+        run: |
+          # Publish in dependency order: shared first, then providers
+          cd packages/shared && npm publish --provenance && cd ../..
+          cd packages/providers/anyrouter-dev && npm publish --provenance && cd ../../..
+          cd packages/providers/aihubmix-com && npm publish --provenance && cd ../../..
         env:
           NPM_CONFIG_PROVENANCE: 'true'
-        working-directory: packages/pi-anyrouter-dev
       - name: Push release commit and tags
         if: ${{ !inputs.dryRun && github.event_name == 'workflow_dispatch' }}
         run: |

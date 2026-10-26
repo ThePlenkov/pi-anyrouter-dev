@@ -13,10 +13,7 @@ jobs:
   typecheck:
     name: typecheck
     runs-on: ubuntu-latest
-    timeout-minutes: 2
-    defaults:
-      run:
-        working-directory: packages/pi-anyrouter-dev
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,15 +25,14 @@ jobs:
           bun-version: 1.4.3
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
-      - run: bun run typecheck
+      - name: Typecheck all packages
+        run: bun run typecheck
+
   test:
     name: test
     runs-on: ubuntu-latest
     needs: typecheck
-    timeout-minutes: 2
-    defaults:
-      run:
-        working-directory: packages/pi-anyrouter-dev
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,15 +44,14 @@ jobs:
           bun-version: 1.4.3
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
-      - run: bun test
+      - name: Test all packages
+        run: bun test
+
   build:
     name: build
     runs-on: ubuntu-latest
     needs: test
-    timeout-minutes: 2
-    defaults:
-      run:
-        working-directory: packages/pi-anyrouter-dev
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,20 +63,22 @@ jobs:
           bun-version: 1.4.3
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
-      - run: bun run build
-      - name: Upload dist
+      - name: Build all packages
+        run: bun run build
+      - name: Upload dist artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-dist
-          path: packages/pi-anyrouter-dev/dist
+          path: |
+            packages/shared/dist
+            packages/providers/anyrouter-dev/dist
+            packages/providers/aihubmix-com/dist
+
   pack:
     name: pack
     runs-on: ubuntu-latest
     needs: build
-    timeout-minutes: 2
-    defaults:
-      run:
-        working-directory: packages/pi-anyrouter-dev
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -93,14 +90,27 @@ jobs:
           bun-version: 1.4.3
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
-      - name: Download dist
+      - name: Download dist artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-dist
-          path: packages/pi-anyrouter-dev/dist
-      - run: bash scripts/pack.sh
-      - name: Upload package.tgz
+          path: dist-temp
+      - name: Pack all packages
+        run: |
+          # Pack @pi-extensions/shared
+          cp -r dist-temp/packages/shared/dist packages/shared/dist
+          cd packages/shared && bash scripts/pack.sh && cd ../..
+          # Pack pi-anyrouter-dev
+          cp -r dist-temp/packages/providers/anyrouter-dev/dist packages/providers/anyrouter-dev/dist
+          cd packages/providers/anyrouter-dev && bash scripts/pack.sh && cd ../../..
+          # Pack pi-aihubmix-com
+          cp -r dist-temp/packages/providers/aihubmix-com/dist packages/providers/aihubmix-com/dist
+          cd packages/providers/aihubmix-com && bash scripts/pack.sh && cd ../../..
+      - name: Upload package.tgz artifacts
         uses: actions/upload-artifact@v4
         with:
           name: package-tgz
-          path: package.tgz
+          path: |
+            packages/shared/package.tgz
+            packages/providers/anyrouter-dev/package.tgz
+            packages/providers/aihubmix-com/package.tgz

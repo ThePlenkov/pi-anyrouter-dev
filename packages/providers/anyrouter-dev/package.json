@@ -49,7 +49,7 @@
     }
   },
   "dependencies": {
-    "@pi-extensions/shared": "workspace:*"
+    "@pi-extensions/shared": "^0.1.0"
   },
   "devDependencies": {
     "@earendil-works/pi-ai": "^1.4.0",
