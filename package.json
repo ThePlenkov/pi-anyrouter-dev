@@ -8,9 +8,9 @@
     "packages/providers/*"
   ],
   "scripts": {
-    "build": "bun run --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared build",
-    "test": "bun run --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared test",
-    "typecheck": "bun run --filter=pi-anyrouter-dev --filter=pi-aihubmix-com --filter=@pi-extensions/shared typecheck",
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "typecheck": "nx run-many -t typecheck",
     "release": "gh workflow run release.yml --ref main -f specifier=patch"
   },
   "devDependencies": {
