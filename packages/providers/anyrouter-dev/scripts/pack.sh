@@ -17,7 +17,8 @@ trap 'rm -f "$PACK_LOG"' EXIT
 # and the error is hidden behind a misleading "no .tgz produced" message.
 TARBALL="$(bun pm pack > "$PACK_LOG" 2>&1; echo ":$?")"
 PACK_EXIT="${TARBALL#*:}"
-TARBALL="$(grep -E '\.tgz$' "$PACK_LOG" | head -1)"
+# Use || true to prevent set -e from exiting when grep finds no match
+TARBALL="$(grep -E '\.tgz$' "$PACK_LOG" | head -1 || true)"
 if [ "$PACK_EXIT" -ne 0 ]; then
   echo "pack: bun pm pack failed with exit $PACK_EXIT" >&2
   exit 1
