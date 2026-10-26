@@ -98,8 +98,12 @@ export default async function anyRouterExtension(pi: ExtensionAPI): Promise<void
 			// Persist the catalog, so the next start - online or offline -
 			// has a model list even before the first refresh completes.
 			if (models.length > 0) {
+				const checkedAt = context.allowNetwork ? Date.now() : context.stored?.checkedAt;
 				await context.publish({
-					persist: { models: toStoredModels(models), checkedAt: Date.now() },
+					persist: {
+						models: toStoredModels(models),
+						...(checkedAt !== undefined ? { checkedAt } : {}),
+					},
 				});
 			}
 			return models;
@@ -204,4 +208,3 @@ export { toModelConfig, toModelConfigs } from "./catalog";
 export { apiKeyTemplate, resolveApiKey, credentialApiKey, API_KEY_ENV_VARS } from "./api-key";
 export type { AnyRouterModelConfig } from "./catalog";
 export type { AnyRouterCatalog, AnyRouterModel } from "./catalog-types";
-

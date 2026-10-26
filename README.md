@@ -6,7 +6,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/pi-aihubmix-com.svg)](https://www.npmjs.com/package/pi-aihubmix-com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Provider extensions for the [pi coding agent](https://github.com/earendil-works/pi-coding-agent).
+Provider extensions for the [pi coding agent](https://github.com/earendil-works/pi).
 
 This monorepo contains multiple provider extensions that add model providers to pi using pi's built-in OpenAI-compatible client.
 

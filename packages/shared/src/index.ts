@@ -198,8 +198,15 @@ export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOpti
 
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 15_000);
+
+	// If the signal is already aborted, abort the controller immediately so the
+	// fetch doesn't proceed. Also add a listener for future aborts.
 	const onAbort = (): void => controller.abort();
-	options.signal.addEventListener("abort", onAbort);
+	if (options.signal.aborted) {
+		controller.abort();
+	} else {
+		options.signal.addEventListener("abort", onAbort);
+	}
 
 	try {
 		const headers: Record<string, string> = {};

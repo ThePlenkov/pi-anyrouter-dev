@@ -8,13 +8,16 @@
 # break caching and artifact upload on the first `nx release` bump.
 set -euo pipefail
 
+# Create unique temp file for pack log to avoid race conditions and symlink attacks.
+PACK_LOG="$(mktemp)"
+trap 'rm -f "$PACK_LOG"' EXIT
+
 # Capture `bun pm pack`'s exit status before the pipe swallows it: without
 # `PIPESTATUS` a failed pack is indistinguishable from an empty grep result,
 # and the error is hidden behind a misleading "no .tgz produced" message.
-TARBALL="$(bun pm pack > /tmp/pack.log 2>&1; echo ":$?")"
+TARBALL="$(bun pm pack > "$PACK_LOG" 2>&1; echo ":$?")"
 PACK_EXIT="${TARBALL#*:}"
-TARBALL="$(grep -E '\.tgz$' /tmp/pack.log | head -1)"
-rm -f /tmp/pack.log
+TARBALL="$(grep -E '\.tgz$' "$PACK_LOG" | head -1)"
 if [ "$PACK_EXIT" -ne 0 ]; then
   echo "pack: bun pm pack failed with exit $PACK_EXIT" >&2
   exit 1
