@@ -193,7 +193,9 @@ export interface CatalogFetchOptions {
  * @returns The parsed JSON response.
  */
 export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOptions): Promise<T> {
-	validateCatalogUrl(url);
+	const validatedUrl = validateCatalogUrl(url);
+	// eslint-disable-next-line no-unused-vars -- validatedUrl is used to assert URL passed validation
+	void validatedUrl;
 
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 15_000);
