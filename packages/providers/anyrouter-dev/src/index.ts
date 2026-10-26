@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AnyModel, ModelsStoreEntry } from "@earendil-works/pi-ai";
 import { apiKeyTemplate, resolveApiKey, credentialApiKey, API_KEY_ENV_VARS, PRIMARY_API_KEY_ENV } from "./api-key";
-import { toModelConfigs, recomputeCompat, type AnyRouterModelConfig } from "./catalog";
+import { toModelConfig, toModelConfigs, recomputeCompat, type AnyRouterModelConfig } from "./catalog";
 import { fetchCatalog, type CatalogFetchOptions } from "./fetch-catalog";
 import { BASE_URL, PROVIDER_ID, PROVIDER_NAME, isOffline } from "./provider-info";
 

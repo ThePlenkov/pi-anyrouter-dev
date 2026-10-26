@@ -193,7 +193,7 @@ export interface CatalogFetchOptions {
  * @returns The parsed JSON response.
  */
 export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOptions): Promise<T> {
-	// codacy-ignore: SSRF -- URL validated by validateCatalogUrl() which throws on invalid input
+	// codacy:ignore SSRF -- URL validated by validateCatalogUrl() which throws on invalid input
 	validateCatalogUrl(url);
 
 	const controller = new AbortController();
