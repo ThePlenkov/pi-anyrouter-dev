@@ -228,3 +228,139 @@ export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOpti
 	}
 }
 
+/**
+ * Common interface for a model config that providers produce.
+ */
+export interface BaseModelConfig {
+	id: string;
+	name: string;
+	api: "openai-completions";
+	reasoning: boolean;
+	thinkingLevelMap?: Record<string, string | null>;
+	input: ("text" | "image")[];
+	cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
+	contextWindow: number;
+	maxTokens: number;
+	compat: Record<string, unknown>;
+}
+
+/**
+ * Options for creating a provider extension.
+ */
+export interface ProviderExtensionOptions<TModelConfig extends BaseModelConfig> {
+	/** Unique provider id (e.g., "anyrouter-dev", "aihubmix-com"). */
+	providerId: string;
+	/** Display name for the provider. */
+	providerName: string;
+	/** Base URL for the provider's API. */
+	baseUrl: string;
+	/** Environment variable names for the API key, in priority order. */
+	apiKeyEnvVars: readonly string[];
+	/** Fetch the model catalog. */
+	fetchCatalog: (options: CatalogFetchOptions) => Promise<any[]>;
+	/** Convert a raw catalog entry to a pi model config. */
+	toModelConfig: (entry: any) => TModelConfig;
+	/** Convert a catalog array to model configs. */
+	toModelConfigs: (entries: readonly any[]) => TModelConfig[];
+	/** Convert model configs to stored models. */
+	toStoredModels: (models: TModelConfig[]) => any[];
+	/** Restore model configs from stored snapshot. */
+	fromStoredModels: (stored: any) => TModelConfig[];
+	/** Whether a model serves chat (for filtering). */
+	isChatModel?: (entry: any) => boolean;
+}
+
+/**
+ * Create a pi provider extension with common boilerplate.
+ *
+ * This handles:
+ * - API key resolution and templates
+ * - Catalog fetching with offline support
+ * - Refresh logic with generation-based deduplication
+ * - Persistence with checkedAt handling
+ * - Stale refresh detection via generation counters
+ *
+ * @param options - Provider-specific configuration.
+ * @returns An async function that registers the provider with pi.
+ */
+export function createProviderExtension<TModelConfig extends BaseModelConfig>(
+	options: ProviderExtensionOptions<TModelConfig>,
+) {
+	const {
+		providerId,
+		providerName,
+		baseUrl,
+		apiKeyEnvVars,
+		fetchCatalog,
+		toModelConfig,
+		toModelConfigs,
+		toStoredModels,
+		fromStoredModels,
+		isChatModel,
+	} = options;
+
+	// Create API key functions for this provider
+	const resolveProviderApiKey = (providerId: string, env: NodeJS.ProcessEnv = process.env) =>
+		resolveApiKey({ envVars: apiKeyEnvVars, providerId, env });
+
+	return async function providerExtension(pi: any): Promise<void> {
+		const apiKey = resolveApiKey({ envVars: apiKeyEnvVars, providerId });
+		const offline = isOffline();
+
+		let models: TModelConfig[] = [];
+		let refreshGeneration = 0;
+
+		if (!offline) {
+			const options = { signal: AbortSignal.timeout(15_000), apiKey };
+			try {
+				const entries = await fetchCatalog(options);
+				const chatEntries = isChatModel ? entries.filter(isChatModel) : entries;
+				models = toModelConfigs(chatEntries);
+			} catch {
+				// A catalog failure must not stop the extension from loading.
+			}
+		}
+
+		pi.registerProvider(providerId, {
+			name: providerName,
+			baseUrl,
+			apiKey: apiKeyTemplate({ envVars: apiKeyEnvVars }),
+			api: "openai-completions",
+			models,
+			refreshModels: async (context: any): Promise<TModelConfig[]> => {
+				// Restore persisted snapshot first
+				const restored = fromStoredModels(context.stored);
+				if (restored.length > 0) models = restored;
+
+				let refreshed: TModelConfig[] = [];
+				let refreshAccepted = false;
+
+				if (context.allowNetwork) {
+					const generation = ++refreshGeneration;
+					const entries = await fetchCatalog({
+						signal: context.signal,
+						apiKey: credentialApiKey(context.credential) ?? resolveApiKey({ envVars: apiKeyEnvVars, providerId }),
+					});
+					const chatEntries = isChatModel ? entries.filter(isChatModel) : entries;
+					refreshed = toModelConfigs(chatEntries);
+
+					if (generation === refreshGeneration && refreshed.length > 0) {
+						models = refreshed;
+					}
+				}
+
+				if (models.length > 0) {
+					await context.publish({
+						persist: {
+							models: toStoredModels(models),
+						},
+					});
+				}
+				return models;
+			},
+		});
+	}
+};
+
+export type { BaseModelConfig, ProviderExtensionOptions, CatalogFetchOptions };
+export { getAgentDir, readStoredCredential, credentialApiKey, resolveApiKey, apiKeyTemplate, isOffline, fetchJsonCatalog, validateCatalogUrl, createProviderExtension };
