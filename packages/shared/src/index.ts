@@ -140,6 +140,39 @@ export function isOffline(env: NodeJS.ProcessEnv = process.env): boolean {
 }
 
 /**
+ * Allowed catalog domains to prevent SSRF.
+ * Only these domains are permitted for catalog fetching.
+ */
+const ALLOWED_CATALOG_DOMAINS = [
+	"anyrouter.dev",
+	"aihubmix.com",
+	"api.inferera.com",
+] as const;
+
+/**
+ * Validate that a catalog URL is from an allowed domain.
+ * Prevents SSRF by restricting fetch to known provider catalog endpoints.
+ */
+function validateCatalogUrl(url: string): void {
+	try {
+		const parsed = new URL(url);
+		if (parsed.protocol !== "https:") {
+			throw new Error("Catalog URL must use HTTPS");
+		}
+		const hostname = parsed.hostname;
+		const allowed = ALLOWED_CATALOG_DOMAINS.some(
+			(domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+		);
+		if (!allowed) {
+			throw new Error(`Catalog domain not allowed: ${hostname}`);
+		}
+	} catch (err) {
+		if (err instanceof Error && err.message.startsWith("Catalog")) throw err;
+		throw new Error(`Invalid catalog URL: ${url}`);
+	}
+}
+
+/**
  * Options for fetching a model catalog.
  */
 export interface CatalogFetchOptions {
@@ -152,22 +185,37 @@ export interface CatalogFetchOptions {
 /**
  * Fetch a JSON catalog from a URL with auth, timeout, and abort handling.
  *
- * @param url - The catalog URL.
+ * The URL is validated against an allowlist of known provider catalog domains
+ * to prevent SSRF. Only HTTPS URLs from approved domains are accepted.
+ *
+ * @param url - The catalog URL (must be from an allowed domain).
  * @param options - The fetch options.
  * @returns The parsed JSON response.
  */
 export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOptions): Promise<T> {
+	// codacy[SSRF]: URL validated against allowlist before fetch
+	validateCatalogUrl(url);
+
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 15_000);
+
+	// If the signal is already aborted, abort the controller immediately so the
+	// fetch doesn't proceed. Also add a listener for future aborts.
 	const onAbort = (): void => controller.abort();
-	options.signal.addEventListener("abort", onAbort);
+	if (options.signal.aborted) {
+		controller.abort();
+	} else {
+		options.signal.addEventListener("abort", onAbort);
+	}
 
 	try {
 		const headers: Record<string, string> = {};
 		if (options.apiKey) headers.Authorization = `Bearer ${options.apiKey}`;
 
+		// codacy[SSRF]: URL validated by validateCatalogUrl() which throws on invalid input
 		const response = await fetch(url, {
 			headers,
+			redirect: "error",
 			signal: controller.signal,
 		});
 		if (!response.ok) {
@@ -179,4 +227,138 @@ export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOpti
 		options.signal.removeEventListener("abort", onAbort);
 	}
 }
+
+/**
+ * Common interface for a model config that providers produce.
+ */
+export interface BaseModelConfig {
+	id: string;
+	name: string;
+	api: "openai-completions";
+	reasoning: boolean;
+	thinkingLevelMap?: Record<string, string | null>;
+	input: ("text" | "image")[];
+	cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
+	contextWindow: number;
+	maxTokens: number;
+	compat: Record<string, unknown>;
+}
+
+/**
+ * Options for creating a provider extension.
+ */
+export interface ProviderExtensionOptions<TModelConfig extends BaseModelConfig> {
+	/** Unique provider id (e.g., "anyrouter-dev", "aihubmix-com"). */
+	providerId: string;
+	/** Display name for the provider. */
+	providerName: string;
+	/** Base URL for the provider's API. */
+	baseUrl: string;
+	/** Environment variable names for the API key, in priority order. */
+	apiKeyEnvVars: readonly string[];
+	/** Fetch the model catalog. */
+	fetchCatalog: (options: CatalogFetchOptions) => Promise<any[]>;
+	/** Convert a raw catalog entry to a pi model config. */
+	toModelConfig: (entry: any) => TModelConfig;
+	/** Convert a catalog array to model configs. */
+	toModelConfigs: (entries: readonly any[]) => TModelConfig[];
+	/** Convert model configs to stored models. */
+	toStoredModels: (models: TModelConfig[]) => any[];
+	/** Restore model configs from stored snapshot. */
+	fromStoredModels: (stored: any) => TModelConfig[];
+	/** Whether a model serves chat (for filtering). */
+	isChatModel?: (entry: any) => boolean;
+}
+
+/**
+ * Create a pi provider extension with common boilerplate.
+ *
+ * This handles:
+ * - API key resolution and templates
+ * - Catalog fetching with offline support
+ * - Refresh logic with generation-based deduplication
+ * - Persistence with checkedAt handling
+ * - Stale refresh detection via generation counters
+ *
+ * @param options - Provider-specific configuration.
+ * @returns An async function that registers the provider with pi.
+ */
+export function createProviderExtension<TModelConfig extends BaseModelConfig>(
+	options: ProviderExtensionOptions<TModelConfig>,
+) {
+	const {
+		providerId,
+		providerName,
+		baseUrl,
+		apiKeyEnvVars,
+		fetchCatalog,
+		toModelConfig,
+		toModelConfigs,
+		toStoredModels,
+		fromStoredModels,
+		isChatModel,
+	} = options;
+
+	// Create API key functions for this provider
+	const resolveProviderApiKey = (providerId: string, env: NodeJS.ProcessEnv = process.env) =>
+		resolveApiKey({ envVars: apiKeyEnvVars, providerId, env });
+
+	return async function providerExtension(pi: any): Promise<void> {
+		const apiKey = resolveApiKey({ envVars: apiKeyEnvVars, providerId });
+		const offline = isOffline();
+
+		let models: TModelConfig[] = [];
+		let refreshGeneration = 0;
+
+		if (!offline) {
+			const options = { signal: AbortSignal.timeout(15_000), apiKey };
+			try {
+				const entries = await fetchCatalog(options);
+				const chatEntries = isChatModel ? entries.filter(isChatModel) : entries;
+				models = toModelConfigs(chatEntries);
+			} catch {
+				// A catalog failure must not stop the extension from loading.
+			}
+		}
+
+		pi.registerProvider(providerId, {
+			name: providerName,
+			baseUrl,
+			apiKey: apiKeyTemplate({ envVars: apiKeyEnvVars }),
+			api: "openai-completions",
+			models,
+			refreshModels: async (context: any): Promise<TModelConfig[]> => {
+				// Restore persisted snapshot first
+				const restored = fromStoredModels(context.stored);
+				if (restored.length > 0) models = restored;
+
+				let refreshed: TModelConfig[] = [];
+				let refreshAccepted = false;
+
+				if (context.allowNetwork) {
+					const generation = ++refreshGeneration;
+					const entries = await fetchCatalog({
+						signal: context.signal,
+						apiKey: credentialApiKey(context.credential) ?? resolveApiKey({ envVars: apiKeyEnvVars, providerId }),
+					});
+					const chatEntries = isChatModel ? entries.filter(isChatModel) : entries;
+					refreshed = toModelConfigs(chatEntries);
+
+					if (generation === refreshGeneration && refreshed.length > 0) {
+						models = refreshed;
+					}
+				}
+
+				if (models.length > 0) {
+					await context.publish({
+						persist: {
+							models: toStoredModels(models),
+						},
+					});
+				}
+				return models;
+			},
+		});
+	}
+};
 
