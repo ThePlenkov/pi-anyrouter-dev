@@ -193,7 +193,7 @@ export interface CatalogFetchOptions {
  * @returns The parsed JSON response.
  */
 export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOptions): Promise<T> {
-	// codacy:ignore SSRF -- URL validated by validateCatalogUrl() which throws on invalid input
+	// codacy[SSRF]: URL validated against allowlist before fetch
 	validateCatalogUrl(url);
 
 	const controller = new AbortController();
@@ -212,7 +212,8 @@ export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOpti
 		const headers: Record<string, string> = {};
 		if (options.apiKey) headers.Authorization = `Bearer ${options.apiKey}`;
 
-		const response = await fetch(url, { // codacy:ignore SSRF -- URL validated by validateCatalogUrl()
+		// codacy[SSRF]: URL validated by validateCatalogUrl() which throws on invalid input
+		const response = await fetch(url, {
 			headers,
 			redirect: "error",
 			signal: controller.signal,
@@ -226,3 +227,4 @@ export async function fetchJsonCatalog<T>(url: string, options: CatalogFetchOpti
 		options.signal.removeEventListener("abort", onAbort);
 	}
 }
+
