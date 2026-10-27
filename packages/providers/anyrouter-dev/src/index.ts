@@ -99,10 +99,7 @@ export default createProviderExtension<AnyRouterModelConfig>({
 				...model,
 				compat: { ...model.compat, thinkingFormat: allNvidia ? "openai" : "openrouter" },
 			};
-		}),
+		});
 	},
 	isChatModel: (entry: any) => (entry.capabilities ?? []).includes("chat"),
-	fetchCatalog,
-	toModelConfig,
-	toModelConfigs,
 });

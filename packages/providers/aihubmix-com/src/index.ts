@@ -68,7 +68,4 @@ export default createProviderExtension({
 		return restored;
 	},
 	isChatModel: (entry: any) => (entry.types ?? "").split(",").map((t: string) => t.trim()).includes("llm"),
-	fetchCatalog,
-	toModelConfig,
-	toModelConfigs,
 });
