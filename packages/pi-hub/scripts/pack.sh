@@ -19,11 +19,11 @@ TARBALL="$(bun pm pack > "$PACK_LOG" 2>&1; echo ":$?")"
 PACK_EXIT="${TARBALL#*:}"
 # Use || true to prevent set -e from exiting when grep finds no match
 TARBALL="$(grep -E '\.tgz$' "$PACK_LOG" | head -1 || true)"
-if [ "$PACK_EXIT" -ne 0 ]; then
+if [[ "$PACK_EXIT" -ne 0 ]]; then
   echo "pack: bun pm pack failed with exit $PACK_EXIT" >&2
   exit 1
 fi
-if [ -z "$TARBALL" ]; then
+if [[ -z "$TARBALL" ]]; then
   echo "pack: no .tgz produced by bun pm pack" >&2
   exit 1
 fi
