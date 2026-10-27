@@ -362,5 +362,3 @@ export function createProviderExtension<TModelConfig extends BaseModelConfig>(
 	}
 };
 
-export type { BaseModelConfig, ProviderExtensionOptions, CatalogFetchOptions };
-export { getAgentDir, readStoredCredential, credentialApiKey, resolveApiKey, apiKeyTemplate, isOffline, fetchJsonCatalog, validateCatalogUrl, createProviderExtension };
