@@ -4,10 +4,6 @@ import { toModelConfig, toModelConfigs, type AnyRouterModelConfig } from "../pro
 import { fetchCatalog as fetchAnyRouterCatalog, type CatalogFetchOptions } from "../providers/anyrouter-dev/src/fetch-catalog";
 import { toModelConfig as toAIHubMixModelConfig, toModelConfigs as toAIHubMixModelConfigs, type AIHubMixModelConfig } from "../providers/aihubmix-com/src/catalog";
 import { fetchCatalog as fetchAIHubMixCatalog } from "../providers/aihubmix-com/src/fetch-catalog";
-import { BASE_URL as ANYROUTER_BASE_URL, PROVIDER_ID as ANYROUTER_PROVIDER_ID, PROVIDER_NAME as ANYROUTER_PROVIDER_NAME, API_KEY_ENV_VARS as ANYROUTER_API_KEY_ENV_VARS } from "../providers/anyrouter-dev/src/provider-info";
-import { BASE_URL as AIHUBMIX_BASE_URL, PROVIDER_ID as AIHUBMIX_PROVIDER_ID, PROVIDER_NAME as AIHUBMIX_PROVIDER_NAME, API_KEY_ENV_VARS as AIHUBMIX_API_KEY_ENV_VARS } from "../providers/aihubmix-com/src/provider-info";
-import { PRIMARY_API_KEY_ENV as ANYROUTER_PRIMARY_API_KEY_ENV, API_KEY_ENV_VARS as ANYROUTER_API_KEY_ENV_VARS } from "../providers/anyrouter-dev/src/api-key";
-import { PRIMARY_API_KEY_ENV as AIHUBMIX_PRIMARY_API_KEY_ENV, API_KEY_ENV_VARS as AIHUBMIX_API_KEY_ENV_VARS } from "../providers/aihubmix-com/src/api-key";
 
 /**
  * pi-hub: All-in-one pi extension registering both providers.
@@ -236,5 +232,5 @@ export default async function piHubExtension(pi: ExtensionAPI): Promise<void> {
 				},
 			};
 		}).filter((e) => (e.capabilities ?? []).includes("chat")),
-	});});
-});
+	});
+}
